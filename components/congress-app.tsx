@@ -323,7 +323,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           </table>
         </section>
 
-        <p className="footer-verse">Servid con buena voluntad, como al Senor y no a los hombres.</p>
+        <p className="footer-verse"><span>Sirvan de buena voluntad, como quien sirve al Señor y no a los hombres.</span><strong>Efesios 6:7</strong></p>
       </main>
 
       {planOpen ? (

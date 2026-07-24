@@ -468,9 +468,22 @@ h3 {
 }
 
 .footer-verse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   margin: 1rem 0 0;
   text-align: center;
-  font-size: 0.86rem;
+  font-size: 0.9rem;
+}
+
+.footer-verse strong {
+  color: var(--accent-ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .modal-backdrop {

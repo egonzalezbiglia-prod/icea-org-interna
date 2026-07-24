@@ -209,17 +209,19 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
       <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div>
 
       {editorOpen ? (
-        <form className="server-editor" onSubmit={(event) => saveServer(event, editorServer ?? undefined)}>
-          <div className="server-editor-head"><div><h4>{editorServer ? "Editar servidor" : "Nuevo servidor"}</h4><span>{editorServer?.fullName || "Carga los datos principales"}</span></div><button className="icon-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }} aria-label="Cerrar editor"><X size={17} /></button></div>
-          <div className="server-editor-grid">
-            <label><span>Nombre completo</span><input name="fullName" defaultValue={editorServer?.fullName ?? ""} placeholder="Nombre completo" /></label>
-            <label><span>Pais</span><select name="countryCode" defaultValue={editorServer?.countryCode ?? "AR"}>{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select></label>
-            <label><span>Telefono</span><input name="whatsapp" defaultValue={editorServer?.whatsapp ?? ""} placeholder="WhatsApp" /></label>
-            <label className="server-active-edit"><input name="active" type="checkbox" defaultChecked={editorServer?.active ?? true} />Activo</label>
-            <label className="server-availability-edit"><span>Disponibilidad</span><textarea name="availability" defaultValue={editorServer ? availabilityToText(editorServer.availability) : ""} placeholder="jueves 13:00-18:00&#10;viernes 08:00-13:00&#10;viernes 18:00-23:00" /></label>
-          </div>
-          <div className="row-actions"><button className="ghost-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>Cancelar</button><button className="primary-button" type="submit">Guardar</button></div>
-        </form>
+        <div className="modal-backdrop" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>
+          <form className="server-editor" onSubmit={(event) => saveServer(event, editorServer ?? undefined)} onClick={(event) => event.stopPropagation()}>
+            <div className="server-editor-head"><div><h4>{editorServer ? "Editar servidor" : "Nuevo servidor"}</h4><span>{editorServer?.fullName || "Carga los datos principales"}</span></div><button className="icon-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }} aria-label="Cerrar editor"><X size={17} /></button></div>
+            <div className="server-editor-grid">
+              <label><span>Nombre completo</span><input name="fullName" defaultValue={editorServer?.fullName ?? ""} placeholder="Nombre completo" /></label>
+              <label><span>Pais</span><select name="countryCode" defaultValue={editorServer?.countryCode ?? "AR"}>{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select></label>
+              <label><span>Telefono</span><input name="whatsapp" defaultValue={editorServer?.whatsapp ?? ""} placeholder="WhatsApp" /></label>
+              <label className="server-active-edit"><input name="active" type="checkbox" defaultChecked={editorServer?.active ?? true} />Activo</label>
+              <label className="server-availability-edit"><span>Disponibilidad</span><textarea name="availability" defaultValue={editorServer ? availabilityToText(editorServer.availability) : ""} placeholder="jueves 13:00-18:00&#10;viernes 08:00-13:00&#10;viernes 18:00-23:00" /></label>
+            </div>
+            <div className="row-actions"><button className="ghost-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>Cancelar</button><button className="primary-button" type="submit">Guardar</button></div>
+          </form>
+        </div>
       ) : null}
 
       <div className="admin-table servers-table server-summary-table">

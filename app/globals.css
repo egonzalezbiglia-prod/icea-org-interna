@@ -928,13 +928,16 @@ h3 {
 }
 
 .server-editor {
+  width: min(760px, 100%);
+  max-height: min(720px, 92vh);
   display: grid;
   gap: 0.9rem;
-  margin: 0.95rem;
+  overflow: auto;
   padding: 1rem;
-  background: rgba(216, 240, 229, 0.42);
-  border: 1px solid rgba(21, 127, 133, 0.22);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 8px;
+  box-shadow: var(--shadow);
 }
 
 .server-editor-head {

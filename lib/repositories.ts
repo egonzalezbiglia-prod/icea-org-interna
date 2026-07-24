@@ -1,7 +1,7 @@
 import type { DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { COUNTRIES, DAYS, POSITIONS, SLOTS } from "@/lib/domain";
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
-import type { Assignment, AvailabilityRange, CountryCode, DayId, Plan, Position, PositionArea, SchedulePayload, Server, Slot } from "@/lib/types";
+import type { Assignment, AvailabilityRange, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 function timestampToString(value: unknown) {
   if (value instanceof Timestamp) return value.toDate().toISOString();
@@ -42,8 +42,6 @@ function positionFromDoc(doc: QueryDocumentSnapshot<DocumentData> | DocumentSnap
   return {
     id: Number(data.id ?? doc.id),
     name: data.name,
-    area: data.area,
-    note: data.note ?? "",
   };
 }
 
@@ -177,11 +175,11 @@ export async function deleteSlot(slotId: string) {
   await batch.commit();
 }
 
-export async function upsertPosition(input: { id?: number; name: string; area: PositionArea; note: string }) {
+export async function upsertPosition(input: { id?: number; name: string }) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
   const positions = await listPositions();
   const id = input.id ?? Math.max(0, ...positions.map((position) => position.id)) + 1;
-  const position: Position = { id, name: input.name.trim() || `Posicion ${id}`, area: input.area, note: input.note.trim() };
+  const position: Position = { id, name: input.name.trim() || `Posicion ${id}` };
   await getDb().collection("positions").doc(String(id)).set(position, { merge: true });
   return position;
 }
@@ -222,6 +220,16 @@ export async function upsertServer(input: {
     { merge: true },
   );
   return serverFromDoc(await ref.get());
+}
+
+export async function deleteServer(serverId: string) {
+  if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
+  const db = getDb();
+  const assignments = await db.collection("assignments").where("serverId", "==", serverId).get();
+  const batch = db.batch();
+  assignments.docs.forEach((doc) => batch.delete(doc.ref));
+  batch.delete(db.collection("servers").doc(serverId));
+  await batch.commit();
 }
 
 export async function seedDefaultsIfEmpty() {

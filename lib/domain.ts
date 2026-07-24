@@ -1,4 +1,4 @@
-import type { Day, DayId, Position, PositionArea, Slot } from "@/lib/types";
+import type { Day, DayId, Position, Slot } from "@/lib/types";
 
 export const DAYS: Day[] = [
   { id: "jueves", label: "Jueves" },
@@ -41,58 +41,13 @@ export const SLOTS: Slot[] = DAYS.flatMap((day) =>
   })),
 );
 
-const AREAS: PositionArea[] = [
-  "Ingreso",
-  "Ingreso",
-  "Ingreso",
-  "Ingreso",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Auditorio",
-  "Pasillos",
-  "Pasillos",
-  "Pasillos",
-  "Pasillos",
-  "Pasillos",
-  "Pasillos",
-  "Apoyo",
-  "Apoyo",
-  "Apoyo",
-  "Apoyo",
-  "Apoyo",
-  "Apoyo",
-];
-
 export const POSITIONS: Position[] = Array.from({ length: 24 }, (_, index) => {
   const id = index + 1;
-  const area = AREAS[index];
   return {
     id,
-    area,
     name: `Posicion ${id}`,
-    note:
-      area === "Auditorio"
-        ? "Atencion durante programa y movimiento entre filas."
-        : area === "Ingreso"
-          ? "Recepcion, orientacion y flujo de entrada."
-          : area === "Pasillos"
-            ? "Circulacion, orden y acompanamiento discreto."
-            : "Soporte para necesidades puntuales del equipo.",
   };
 });
-
-export const POSITION_AREAS: Array<"Todas" | PositionArea> = [
-  "Todas",
-  "Ingreso",
-  "Auditorio",
-  "Pasillos",
-  "Apoyo",
-];
 
 export function assignmentId(dayId: DayId, slotId: string, positionId: number) {
   return `${dayId}__${slotId}__${positionId}`;

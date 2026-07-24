@@ -2,9 +2,9 @@
 
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Filter, ImageIcon, Map as MapIcon, Lock, LogOut, MessageCircle, Plus, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
-import { COUNTRIES, POSITION_AREAS, assignmentId, cleanPhone, hoursBetween, minutesFromTime, normalizeSearch, whatsappUrl } from "@/lib/domain";
-import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, PositionArea, SchedulePayload, Server, Slot } from "@/lib/types";
+import { AlertTriangle, ImageIcon, Map as MapIcon, Lock, LogOut, MessageCircle, Plus, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
+import { COUNTRIES, assignmentId, cleanPhone, hoursBetween, minutesFromTime, normalizeSearch, whatsappUrl } from "@/lib/domain";
+import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
 const ADMIN_SESSION_KEY = "icea-admin-ok";
@@ -167,11 +167,9 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   const [data, setData] = useState(initialData);
   const [activeDay, setActiveDay] = useState<DayId>(initialData.days[0]?.id ?? "jueves");
   const [query, setQuery] = useState("");
-  const [area, setArea] = useState<"Todas" | PositionArea>("Todas");
   const [adminKey, setAdminKey] = useState("");
   const [adminInput, setAdminInput] = useState("");
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
-  const [actorName, setActorName] = useState("");
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
@@ -182,7 +180,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   const servers = useMemo(() => serverMap(data.servers), [data.servers]);
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
   const slots = useMemo(() => data.slots.filter((slot) => slot.dayId === activeDay), [activeDay, data.slots]);
-  const positions = useMemo(() => area === "Todas" ? data.positions : data.positions.filter((position) => position.area === area), [area, data.positions]);
+  const positions = data.positions;
   const search = normalizeSearch(query);
 
   const personalShifts = useMemo(() => {
@@ -230,7 +228,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       window.sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
       setAdminLoginOpen(false);
       setAdminInput("");
-      setMessage("Modo admin activo.");
+      setMessage("");
       return;
     }
     setMessage("Clave de admin incorrecta.");
@@ -251,7 +249,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const result = await apiJson<{ assignment: Assignment | null }>("/api/schedule", {
         method: "PATCH",
-        body: JSON.stringify({ dayId, slotId, positionId, serverId, editKey: adminKey, actorName }),
+        body: JSON.stringify({ dayId, slotId, positionId, serverId, editKey: adminKey }),
       });
       setData((current) => {
         const next = current.assignments.filter((assignment) => assignment.id !== id);
@@ -322,16 +320,9 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       <main className="page">
         <section className="controls">
           <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar servidor por nombre" />{query ? <button type="button" aria-label="Limpiar busqueda" onClick={() => setQuery("")}><X size={16} /></button> : null}</label>
-          <label className="select-field"><Filter size={18} /><select value={area} onChange={(event) => setArea(event.target.value as typeof area)}>{POSITION_AREAS.map((item) => <option key={item}>{item}</option>)}</select></label>
         </section>
 
-        {isAdmin || message ? (
-          <section className="edit-strip">
-            {isAdmin ? <strong>Modo admin activo</strong> : null}
-            {isAdmin ? <input value={actorName} onChange={(event) => setActorName(event.target.value)} placeholder="Tu nombre" /> : null}
-            {message ? <p>{message}</p> : null}
-          </section>
-        ) : null}
+        {message ? <section className="edit-strip"><p>{message}</p></section> : null}
 
         {isAdmin && adminPanelOpen ? <AdminPanel data={data} onMutate={mutateConfig} /> : null}
 
@@ -340,7 +331,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
             <div className="section-heading"><h2>Turnos encontrados</h2><span>{personalShifts.length} coincidencias</span></div>
             {personalShifts.length ? (
               <div className="results-grid">
-                {personalShifts.map(({ assignment, day, slot, position }) => <article className="result-card" key={assignment.id}><strong>{assignment.serverName}</strong><span>{day?.label} · {slot?.label}</span><small>Pos. {assignment.positionId} · {position?.area}</small></article>)}
+                {personalShifts.map(({ assignment, day, slot, position }) => <article className="result-card" key={assignment.id}><strong>{assignment.serverName}</strong><span>{day?.label} · {slot?.label}</span><small>Pos. {assignment.positionId}{position?.name ? " · " + position.name : ""}</small></article>)}
               </div>
             ) : <p className="empty-state">No hay turnos asignados para esa busqueda.</p>}
           </section>
@@ -412,22 +403,36 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
 
 function AdminPanel({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
+  const [newServerOpen, setNewServerOpen] = useState(false);
+  const [newSlotOpen, setNewSlotOpen] = useState(false);
+  const [newPositionOpen, setNewPositionOpen] = useState(false);
 
   async function saveSlot(event: React.FormEvent<HTMLFormElement>, slot?: Slot) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     await onMutate({ type: "upsertSlot", slot: { id: slot?.id, dayId: String(form.get("dayId") ?? slot?.dayId), start: String(form.get("start") ?? slot?.start), end: String(form.get("end") ?? slot?.end) } });
+    if (!slot) {
+      formElement.reset();
+      setNewSlotOpen(false);
+    }
   }
 
   async function savePosition(event: React.FormEvent<HTMLFormElement>, position?: Position) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    await onMutate({ type: "upsertPosition", position: { id: position?.id, name: String(form.get("name") ?? position?.name), area: String(form.get("area") ?? position?.area), note: String(form.get("note") ?? position?.note) } });
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    await onMutate({ type: "upsertPosition", position: { id: position?.id, name: String(form.get("name") ?? position?.name) } });
+    if (!position) {
+      formElement.reset();
+      setNewPositionOpen(false);
+    }
   }
 
   async function saveServer(event: React.FormEvent<HTMLFormElement>, server?: Server) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const countryCode = String(form.get("countryCode") ?? "AR") as CountryCode;
     const country = COUNTRIES.find((item) => item.code === countryCode) ?? COUNTRIES[0];
     await onMutate({
@@ -442,51 +447,74 @@ function AdminPanel({ data, onMutate }: { data: SchedulePayload; onMutate: (body
         availability: parseAvailabilityText(String(form.get("availability") ?? "")),
       },
     });
+    if (!server) {
+      formElement.reset();
+      setNewServerOpen(false);
+    }
+  }
+
+  function confirmDelete(label: string) {
+    return window.confirm("Eliminar " + label + "? Tambien se borraran sus asignaciones relacionadas.");
   }
 
   return (
     <section className="admin-panel">
-      <div className="section-heading"><h2>Configuracion admin</h2><span>Servidores, horarios y posiciones</span></div>
-      <div className="admin-grid servers-admin">
-        <div>
-          <h3>Servidores</h3>
-          <form className="server-form" onSubmit={(event) => saveServer(event)}>
+      <div className="admin-panel-head"><div><h2>Configuracion admin</h2><span>Servidores, horarios y posiciones</span></div></div>
+
+      <div className="admin-card">
+        <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><button className="primary-button" type="button" onClick={() => setNewServerOpen((open) => !open)}><Plus size={16} />Nuevo</button></div>
+        {newServerOpen ? (
+          <form className="admin-new-form server-new-form" onSubmit={(event) => saveServer(event)}>
             <input name="fullName" placeholder="Nombre completo" />
             <select name="countryCode" defaultValue="AR">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select>
             <input name="whatsapp" placeholder="WhatsApp" />
             <label><input name="active" type="checkbox" defaultChecked />Activo</label>
             <textarea name="availability" placeholder="jueves 13:00-18:00&#10;viernes 08:00-13:00&#10;viernes 18:00-23:00" />
-            <button className="primary-button" type="submit"><Plus size={16} />Agregar servidor</button>
+            <div className="row-actions"><button className="ghost-button" type="button" onClick={() => setNewServerOpen(false)}>Cancelar</button><button className="primary-button" type="submit">Guardar servidor</button></div>
           </form>
-          <div className="server-list">
-            {data.servers.map((server) => {
-              const available = availabilityHours(server);
-              const { occupiedHours } = occupiedStats(server.id, data.assignments, slotsById);
-              const percent = available ? Math.round((occupiedHours / available) * 100) : 0;
-              const wa = whatsappUrl(server.dialCode, server.whatsapp);
-              return (
-                <form className={`server-row ${server.active ? "" : "inactive"}`} key={server.id} onSubmit={(event) => saveServer(event, server)}>
-                  <div className="server-row-head"><strong>{server.fullName}</strong><span>{available}h disp · {occupiedHours}h ocup · {percent}%</span>{wa ? <a href={wa} target="_blank" rel="noreferrer"><MessageCircle size={16} />WhatsApp</a> : null}</div>
-                  <input name="fullName" defaultValue={server.fullName} />
-                  <select name="countryCode" defaultValue={server.countryCode}>{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select>
-                  <input name="whatsapp" defaultValue={server.whatsapp} />
-                  <label><input name="active" type="checkbox" defaultChecked={server.active} />Activo</label>
-                  <textarea name="availability" defaultValue={availabilityToText(server.availability)} />
-                  <button className="ghost-button" type="submit">Guardar servidor</button>
-                </form>
-              );
-            })}
+        ) : null}
+        <div className="admin-table servers-table">
+          <div className="admin-table-head"><span>Servidor</span><span>WhatsApp</span><span>Capacidad</span><span>Disponible</span><span>Estado</span><span>Acciones</span></div>
+          {data.servers.map((server) => {
+            const available = availabilityHours(server);
+            const { occupiedHours } = occupiedStats(server.id, data.assignments, slotsById);
+            const percent = available ? Math.round((occupiedHours / available) * 100) : 0;
+            const wa = whatsappUrl(server.dialCode, server.whatsapp);
+            return (
+              <form className={"admin-table-row server-data-row " + (server.active ? "" : "inactive")} key={server.id} onSubmit={(event) => saveServer(event, server)}>
+                <input name="fullName" defaultValue={server.fullName} aria-label="Nombre completo" />
+                <div className="phone-cell"><select name="countryCode" defaultValue={server.countryCode} aria-label="Pais">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>+{country.dialCode}</option>)}</select><input name="whatsapp" defaultValue={server.whatsapp} aria-label="WhatsApp" />{wa ? <a href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp"><MessageCircle size={17} /></a> : null}</div>
+                <span className="capacity-pill">{occupiedHours}h / {available}h · {percent}%</span>
+                <textarea name="availability" defaultValue={availabilityToText(server.availability)} aria-label="Disponibilidad" />
+                <label className="active-toggle"><input name="active" type="checkbox" defaultChecked={server.active} />Activo</label>
+                <div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete(server.fullName) && onMutate({ type: "deleteServer", serverId: server.id })} aria-label="Eliminar servidor"><Trash2 size={16} /></button></div>
+              </form>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="admin-card-grid">
+        <div className="admin-card">
+          <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div>
+          {newSlotOpen ? (
+            <form className="admin-new-form slot-new-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><button className="primary-button" type="submit">Guardar horario</button></form>
+          ) : null}
+          <div className="admin-table slots-table">
+            <div className="admin-table-head"><span>Dia</span><span>Inicio</span><span>Fin</span><span>Acciones</span></div>
+            {data.slots.map((slot) => <form className="admin-table-row slot-data-row" key={slot.id} onSubmit={(event) => saveSlot(event, slot)}><select name="dayId" defaultValue={slot.dayId} aria-label="Dia">{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue={slot.start} aria-label="Inicio" /><input name="end" type="time" defaultValue={slot.end} aria-label="Fin" /><div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete("el horario " + slot.label) && onMutate({ type: "deleteSlot", slotId: slot.id })} aria-label="Eliminar horario"><Trash2 size={16} /></button></div></form>)}
           </div>
         </div>
 
-        <div>
-          <h3>Horarios</h3>
-          <form className="compact-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><button className="primary-button" type="submit"><Plus size={16} />Agregar</button></form>
-          <div className="config-list">{data.slots.map((slot) => <form className="config-row" key={slot.id} onSubmit={(event) => saveSlot(event, slot)}><strong>{data.days.find((day) => day.id === slot.dayId)?.label}</strong><input name="start" type="time" defaultValue={slot.start} /><input name="end" type="time" defaultValue={slot.end} /><input name="dayId" type="hidden" value={slot.dayId} /><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => onMutate({ type: "deleteSlot", slotId: slot.id })} aria-label="Eliminar horario"><Trash2 size={16} /></button></form>)}</div>
-
-          <h3 className="positions-title">Posiciones</h3>
-          <form className="compact-form" onSubmit={(event) => savePosition(event)}><input name="name" placeholder={`Posicion ${data.positions.length + 1}`} /><select name="area" defaultValue="Auditorio">{POSITION_AREAS.filter((item) => item !== "Todas").map((item) => <option key={item}>{item}</option>)}</select><input name="note" placeholder="Nota breve" /><button className="primary-button" type="submit"><Plus size={16} />Agregar</button></form>
-          <div className="config-list">{data.positions.map((position) => <form className="config-row position-config" key={position.id} onSubmit={(event) => savePosition(event, position)}><strong>{position.id}</strong><input name="name" defaultValue={position.name} /><select name="area" defaultValue={position.area}>{POSITION_AREAS.filter((item) => item !== "Todas").map((item) => <option key={item}>{item}</option>)}</select><input name="note" defaultValue={position.note} /><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => onMutate({ type: "deletePosition", positionId: position.id })} aria-label="Eliminar posicion"><Trash2 size={16} /></button></form>)}</div>
+        <div className="admin-card">
+          <div className="admin-card-head"><div><h3>Posiciones</h3><span>{data.positions.length} posiciones</span></div><button className="primary-button" type="button" onClick={() => setNewPositionOpen((open) => !open)}><Plus size={16} />Nuevo</button></div>
+          {newPositionOpen ? (
+            <form className="admin-new-form position-new-form" onSubmit={(event) => savePosition(event)}><input name="name" placeholder={"Posicion " + (data.positions.length + 1)} /><button className="primary-button" type="submit">Guardar posicion</button></form>
+          ) : null}
+          <div className="admin-table positions-table">
+            <div className="admin-table-head"><span>#</span><span>Nombre</span><span>Acciones</span></div>
+            {data.positions.map((position) => <form className="admin-table-row position-data-row" key={position.id} onSubmit={(event) => savePosition(event, position)}><strong>{position.id}</strong><input name="name" defaultValue={position.name} aria-label="Nombre de posicion" /><div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete("la posicion " + position.id) && onMutate({ type: "deletePosition", positionId: position.id })} aria-label="Eliminar posicion"><Trash2 size={16} /></button></div></form>)}
+          </div>
         </div>
       </div>
     </section>

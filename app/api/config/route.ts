@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { editKeyFromRequest, verifyEditKey } from "@/lib/auth";
-import { getSchedulePayload, upsertSlot, deleteSlot, upsertPosition, deletePosition, upsertServer } from "@/lib/repositories";
+import { getSchedulePayload, upsertSlot, deleteSlot, upsertPosition, deletePosition, upsertServer, deleteServer } from "@/lib/repositories";
 import { configSchema } from "@/lib/validation";
 
 export async function PATCH(request: Request) {
@@ -19,6 +19,7 @@ export async function PATCH(request: Request) {
   if (parsed.data.type === "upsertPosition") await upsertPosition(parsed.data.position);
   if (parsed.data.type === "deletePosition") await deletePosition(parsed.data.positionId);
   if (parsed.data.type === "upsertServer") await upsertServer(parsed.data.server);
+  if (parsed.data.type === "deleteServer") await deleteServer(parsed.data.serverId);
 
   return NextResponse.json(await getSchedulePayload());
 }

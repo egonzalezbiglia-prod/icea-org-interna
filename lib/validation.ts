@@ -40,8 +40,6 @@ const slotSchema = z.object({
 const positionSchema = z.object({
   id: z.number().int().positive().optional(),
   name: z.string().max(80),
-  area: z.enum(["Ingreso", "Auditorio", "Pasillos", "Apoyo"]),
-  note: z.string().max(220).default(""),
 });
 
 const availabilitySchema = z.object({
@@ -66,4 +64,5 @@ export const configSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("upsertPosition"), position: positionSchema, editKey: z.string().optional() }),
   z.object({ type: z.literal("deletePosition"), positionId: z.number().int().positive(), editKey: z.string().optional() }),
   z.object({ type: z.literal("upsertServer"), server: serverSchema, editKey: z.string().optional() }),
+  z.object({ type: z.literal("deleteServer"), serverId: z.string().min(1), editKey: z.string().optional() }),
 ]);

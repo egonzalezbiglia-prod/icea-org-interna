@@ -1,5 +1,4 @@
 export type DayId = "jueves" | "viernes" | "sabado";
-export type PositionArea = "Ingreso" | "Auditorio" | "Pasillos" | "Apoyo";
 export type CountryCode = "AR" | "UY" | "PY" | "CL" | "BR" | "BO";
 
 export type Day = {
@@ -18,8 +17,6 @@ export type Slot = {
 export type Position = {
   id: number;
   name: string;
-  area: PositionArea;
-  note: string;
 };
 
 export type AvailabilityRange = {

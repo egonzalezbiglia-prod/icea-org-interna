@@ -234,7 +234,7 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
           return (
             <div className={"admin-table-row server-summary-row " + (server.active ? "" : "inactive")} key={server.id}>
               <strong>{server.fullName}</strong>
-              <div>{wa ? <a className="whatsapp-icon" href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp"><MessageCircle size={17} /></a> : <span className="muted">Sin telefono</span>}</div>
+              <div className="server-phone-cell">{server.whatsapp ? <span>+{server.dialCode} {server.whatsapp}</span> : <span className="muted">Sin telefono</span>}{wa ? <a className="whatsapp-icon" href={wa} target="_blank" rel="noreferrer" aria-label={`Abrir WhatsApp de ${server.fullName}`}><MessageCircle size={17} /></a> : null}</div>
               <span className="capacity-pill">{occupiedHours}h / {available}h · {percent}%</span>
               <div className="availability-days">
                 {data.days.map((day) => {

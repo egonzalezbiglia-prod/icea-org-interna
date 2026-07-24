@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Lock, MessageCircle, Plus, Rows3, Trash2, Users } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Lock, MessageCircle, Pencil, Plus, Rows3, Trash2, Users, X } from "lucide-react";
 import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -159,9 +159,24 @@ function confirmDelete(label: string) {
   return window.confirm("Eliminar " + label + "? Tambien se borraran sus asignaciones relacionadas.");
 }
 
+function dayAvailabilityPercent(server: Server, dayId: DayId, slots: Slot[]) {
+  const total = slots.filter((slot) => slot.dayId === dayId).reduce((sum, slot) => sum + hoursBetween(slot.start, slot.end), 0);
+  const available = server.availability.filter((range) => range.dayId === dayId).reduce((sum, range) => sum + hoursBetween(range.start, range.end), 0);
+  return total ? Math.min(100, Math.round((available / total) * 100)) : 0;
+}
+
+function availabilityTone(percent: number) {
+  if (percent <= 0) return "none";
+  if (percent < 20) return "low";
+  if (percent < 50) return "medium";
+  if (percent <= 75) return "good";
+  return "full";
+}
+
 function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
-  const [newServerOpen, setNewServerOpen] = useState(false);
+  const [editingServer, setEditingServer] = useState<Server | null>(null);
+  const [creatingServer, setCreatingServer] = useState(false);
 
   async function saveServer(event: React.FormEvent<HTMLFormElement>, server?: Server) {
     event.preventDefault();
@@ -181,41 +196,53 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
         availability: parseAvailabilityText(String(form.get("availability") ?? "")),
       },
     });
-    if (!server) {
-      formElement.reset();
-      setNewServerOpen(false);
-    }
+    formElement.reset();
+    setEditingServer(null);
+    setCreatingServer(false);
   }
+
+  const editorServer = creatingServer ? null : editingServer;
+  const editorOpen = creatingServer || Boolean(editingServer);
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><button className="primary-button" type="button" onClick={() => setNewServerOpen((open) => !open)}><Plus size={16} />Nuevo</button></div>
-      {newServerOpen ? (
-        <form className="admin-new-form server-new-form" onSubmit={(event) => saveServer(event)}>
-          <input name="fullName" placeholder="Nombre completo" />
-          <select name="countryCode" defaultValue="AR">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select>
-          <input name="whatsapp" placeholder="WhatsApp" />
-          <label><input name="active" type="checkbox" defaultChecked />Activo</label>
-          <textarea name="availability" placeholder="jueves 13:00-18:00&#10;viernes 08:00-13:00&#10;viernes 18:00-23:00" />
-          <div className="row-actions"><button className="ghost-button" type="button" onClick={() => setNewServerOpen(false)}>Cancelar</button><button className="primary-button" type="submit">Guardar servidor</button></div>
+      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div>
+
+      {editorOpen ? (
+        <form className="server-editor" onSubmit={(event) => saveServer(event, editorServer ?? undefined)}>
+          <div className="server-editor-head"><div><h4>{editorServer ? "Editar servidor" : "Nuevo servidor"}</h4><span>{editorServer?.fullName || "Carga los datos principales"}</span></div><button className="icon-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }} aria-label="Cerrar editor"><X size={17} /></button></div>
+          <div className="server-editor-grid">
+            <label><span>Nombre completo</span><input name="fullName" defaultValue={editorServer?.fullName ?? ""} placeholder="Nombre completo" /></label>
+            <label><span>Pais</span><select name="countryCode" defaultValue={editorServer?.countryCode ?? "AR"}>{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.label} +{country.dialCode}</option>)}</select></label>
+            <label><span>Telefono</span><input name="whatsapp" defaultValue={editorServer?.whatsapp ?? ""} placeholder="WhatsApp" /></label>
+            <label className="server-active-edit"><input name="active" type="checkbox" defaultChecked={editorServer?.active ?? true} />Activo</label>
+            <label className="server-availability-edit"><span>Disponibilidad</span><textarea name="availability" defaultValue={editorServer ? availabilityToText(editorServer.availability) : ""} placeholder="jueves 13:00-18:00&#10;viernes 08:00-13:00&#10;viernes 18:00-23:00" /></label>
+          </div>
+          <div className="row-actions"><button className="ghost-button" type="button" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>Cancelar</button><button className="primary-button" type="submit">Guardar</button></div>
         </form>
       ) : null}
-      <div className="admin-table servers-table">
-        <div className="admin-table-head"><span>Servidor</span><span>WhatsApp</span><span>Capacidad</span><span>Disponible</span><span>Estado</span><span>Acciones</span></div>
+
+      <div className="admin-table servers-table server-summary-table">
+        <div className="admin-table-head"><span>Nombre completo</span><span>WhatsApp</span><span>Capacidad</span><span>Disponibilidad</span><span>Estado</span><span>Acciones</span></div>
         {data.servers.map((server) => {
           const available = availabilityHours(server);
           const { occupiedHours } = occupiedStats(server.id, data.assignments, slotsById);
           const percent = available ? Math.round((occupiedHours / available) * 100) : 0;
           const wa = whatsappUrl(server.dialCode, server.whatsapp);
           return (
-            <form className={"admin-table-row server-data-row " + (server.active ? "" : "inactive")} key={server.id} onSubmit={(event) => saveServer(event, server)}>
-              <input name="fullName" defaultValue={server.fullName} aria-label="Nombre completo" />
-              <div className="phone-cell"><select name="countryCode" defaultValue={server.countryCode} aria-label="Pais">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>+{country.dialCode}</option>)}</select><input name="whatsapp" defaultValue={server.whatsapp} aria-label="WhatsApp" />{wa ? <a href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp"><MessageCircle size={17} /></a> : null}</div>
+            <div className={"admin-table-row server-summary-row " + (server.active ? "" : "inactive")} key={server.id}>
+              <strong>{server.fullName}</strong>
+              <div>{wa ? <a className="whatsapp-icon" href={wa} target="_blank" rel="noreferrer" aria-label="Abrir WhatsApp"><MessageCircle size={17} /></a> : <span className="muted">Sin telefono</span>}</div>
               <span className="capacity-pill">{occupiedHours}h / {available}h · {percent}%</span>
-              <textarea name="availability" defaultValue={availabilityToText(server.availability)} aria-label="Disponibilidad" />
-              <label className="active-toggle"><input name="active" type="checkbox" defaultChecked={server.active} />Activo</label>
-              <div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete(server.fullName) && onMutate({ type: "deleteServer", serverId: server.id })} aria-label="Eliminar servidor"><Trash2 size={16} /></button></div>
-            </form>
+              <div className="availability-days">
+                {data.days.map((day) => {
+                  const dayPercent = dayAvailabilityPercent(server, day.id, data.slots);
+                  return <span className={"availability-day " + availabilityTone(dayPercent)} key={day.id}><strong>{day.label.slice(0, 1)}</strong>{dayPercent}%</span>;
+                })}
+              </div>
+              <span className={"status-check " + (server.active ? "active" : "inactive")} aria-label={server.active ? "Activo" : "Inactivo"}>{server.active ? <Check size={13} /> : "-"}</span>
+              <div className="row-actions"><button className="ghost-icon-button" type="button" onClick={() => { setEditingServer(server); setCreatingServer(false); }} aria-label="Editar servidor"><Pencil size={16} /></button><button className="icon-danger" type="button" onClick={() => confirmDelete(server.fullName) && onMutate({ type: "deleteServer", serverId: server.id })} aria-label="Eliminar servidor"><Trash2 size={16} /></button></div>
+            </div>
           );
         })}
       </div>

@@ -718,8 +718,8 @@ h3 {
 }
 
 .servers-table .admin-table-head,
-.server-data-row {
-  grid-template-columns: minmax(180px, 1.1fr) minmax(210px, 1fr) 130px minmax(230px, 1.25fr) 96px 132px;
+.server-summary-row {
+  grid-template-columns: minmax(180px, 1.25fr) 92px 140px minmax(240px, 1.2fr) 76px 108px;
 }
 
 .slots-table .admin-table-head,
@@ -738,6 +738,9 @@ h3 {
 .admin-table-row input,
 .admin-table-row select,
 .admin-table-row textarea,
+.server-editor input,
+.server-editor select,
+.server-editor textarea,
 .login-modal input {
   min-height: 38px;
   width: 100%;
@@ -858,6 +861,9 @@ h3 {
 @media (max-width: 760px) {
   .admin-sidebar,
   .server-new-form,
+  .server-summary-table .admin-table-head,
+  .server-summary-row,
+  .server-editor-grid,
   .slot-new-form,
   .position-new-form,
   .servers-table .admin-table-head,
@@ -919,4 +925,168 @@ h3 {
 
 .cell-danger .cell-alert {
   color: #9b3f2d;
+}
+
+.server-editor {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0.95rem;
+  padding: 1rem;
+  background: rgba(216, 240, 229, 0.42);
+  border: 1px solid rgba(21, 127, 133, 0.22);
+  border-radius: 8px;
+}
+
+.server-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.server-editor-head h4 {
+  margin: 0;
+  color: var(--accent-ink);
+  font-size: 1.05rem;
+}
+
+.server-editor-head span,
+.server-editor label span {
+  color: var(--ink-dim);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.server-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(130px, 0.7fr) minmax(150px, 0.9fr) 92px;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.server-editor label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.server-active-edit {
+  min-height: 38px;
+  display: flex !important;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+
+.server-availability-edit {
+  grid-column: 1 / -1;
+}
+
+.server-availability-edit textarea {
+  min-height: 106px;
+}
+
+.icon-button,
+.ghost-icon-button {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--accent-ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.ghost-icon-button {
+  background: var(--accent-soft);
+  border-color: rgba(21, 127, 133, 0.18);
+}
+
+.server-summary-row > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whatsapp-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.availability-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  gap: 0.35rem;
+}
+
+.availability-day {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.availability-day.none {
+  color: #6f756f;
+  background: #ecefeb;
+  border-color: #d8ded6;
+}
+
+.availability-day.low {
+  color: #8a372b;
+  background: #f7ddd8;
+  border-color: #edc7bf;
+}
+
+.availability-day.medium {
+  color: #8a4a23;
+  background: #f8e4cf;
+  border-color: #efccb0;
+}
+
+.availability-day.good {
+  color: #6c5f00;
+  background: #f5f3b8;
+  border-color: #e5df87;
+}
+
+.availability-day.full {
+  color: #155a42;
+  background: #d8f0dc;
+  border-color: #aed8b8;
+}
+
+.status-check {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  justify-self: start;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.status-check.active {
+  color: #155a42;
+  background: #d8f0dc;
+}
+
+.status-check.inactive {
+  color: var(--ink-dim);
+  background: #ecefeb;
 }

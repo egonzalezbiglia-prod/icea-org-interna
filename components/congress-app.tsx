@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CalendarDays, Eye, Filter, ImageIcon, Lock, LogOut, MessageCircle, Plus, RefreshCw, Search, Settings, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { AlertTriangle, Filter, ImageIcon, Map as MapIcon, Lock, LogOut, MessageCircle, Plus, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
 import { COUNTRIES, POSITION_AREAS, assignmentId, cleanPhone, hoursBetween, minutesFromTime, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, PositionArea, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -203,9 +203,6 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       });
   }, [data, search]);
 
-  const filledCount = useMemo(() => slots.reduce((total, slot) => total + data.positions.filter((position) => assignments.has(assignmentId(activeDay, slot.id, position.id))).length, 0), [activeDay, assignments, data.positions, slots]);
-  const totalCells = slots.length * data.positions.length;
-
   useEffect(() => {
     if (window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAdminKey(ADMIN_KEY);
   }, []);
@@ -220,7 +217,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const next = await apiJson<SchedulePayload>("/api/schedule");
       setData(next);
-      setMessage("Grilla actualizada.");
+      if (isAdmin) setMessage("Grilla actualizada.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo actualizar.");
     }
@@ -307,11 +304,11 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-title">
-          <p className="eyebrow">Congreso cristiano · Equipo de Servidores</p>
+          <p className="eyebrow">ICEA 2026 · ORGANIZACIÓN INTERNA</p>
           <h1>Grilla de turnos</h1>
         </div>
         <div className="topbar-actions">
-          <button className="ghost-button" onClick={() => setPlanOpen(true)}><Eye size={17} />Plano</button>
+          <button className="ghost-button" onClick={() => setPlanOpen(true)}><MapIcon size={17} />Plano</button>
           <button className="ghost-button" onClick={refresh}><RefreshCw size={17} />Actualizar</button>
           {isAdmin ? (
             <>
@@ -323,22 +320,18 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       </header>
 
       <main className="page">
-        <section className="summary-band">
-          <span><CalendarDays size={18} /> {data.days.length} dias</span>
-          <span><Users size={18} /> {data.positions.length} posiciones</span>
-          <span><ShieldCheck size={18} /> {filledCount} de {totalCells} cubiertos</span>
-        </section>
-
         <section className="controls">
           <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar servidor por nombre" />{query ? <button type="button" aria-label="Limpiar busqueda" onClick={() => setQuery("")}><X size={16} /></button> : null}</label>
           <label className="select-field"><Filter size={18} /><select value={area} onChange={(event) => setArea(event.target.value as typeof area)}>{POSITION_AREAS.map((item) => <option key={item}>{item}</option>)}</select></label>
         </section>
 
-        <section className="edit-strip">
-          <strong>{isAdmin ? "Modo admin activo" : "Vista publica"}</strong>
-          {isAdmin ? <input value={actorName} onChange={(event) => setActorName(event.target.value)} placeholder="Tu nombre" /> : null}
-          {message ? <p>{message}</p> : null}
-        </section>
+        {isAdmin || message ? (
+          <section className="edit-strip">
+            {isAdmin ? <strong>Modo admin activo</strong> : null}
+            {isAdmin ? <input value={actorName} onChange={(event) => setActorName(event.target.value)} placeholder="Tu nombre" /> : null}
+            {message ? <p>{message}</p> : null}
+          </section>
+        ) : null}
 
         {isAdmin && adminPanelOpen ? <AdminPanel data={data} onMutate={mutateConfig} /> : null}
 

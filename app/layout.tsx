@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Figtree, Outfit } from "next/font/google";
 import "./globals.css";
+
+const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 
 export const metadata: Metadata = {
   title: "ICEA Org Interna",
@@ -15,7 +19,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body className={`${figtree.variable} ${outfit.variable}`}>{children}</body>
     </html>
   );
 }

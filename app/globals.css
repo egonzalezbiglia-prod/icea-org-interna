@@ -13,8 +13,8 @@
   --warm-soft: #efffc8;
   --graphite: #202827;
   --shadow: 0 1px 2px rgba(32, 40, 39, 0.07), 0 14px 42px rgba(21, 127, 133, 0.11);
-  --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: var(--font-outfit), sans-serif;
+  --sans: var(--font-figtree), sans-serif;
 }
 
 * {

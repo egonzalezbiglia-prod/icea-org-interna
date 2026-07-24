@@ -341,7 +341,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
 
         <section className="schedule-wrap" aria-label="Grilla de turnos">
           <table className="schedule-grid">
-            <thead><tr><th className="position-head">Posicion</th>{slots.map((slot) => <th key={slot.id}>{slot.label}</th>)}</tr></thead>
+            <thead><tr><th className="position-head">POS.</th>{slots.map((slot) => <th key={slot.id}>{slot.label}</th>)}</tr></thead>
             <tbody>
               {positions.map((position) => (
                 <tr key={position.id}>

@@ -13,13 +13,31 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fbfaf6",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfaf6" },
+    { media: "(prefers-color-scheme: dark)", color: "#181a18" },
+  ],
 };
+
+const themeScript = `
+(() => {
+  try {
+    const stored = window.localStorage.getItem("icea-theme");
+    const theme = stored === "light" || stored === "dark" ? stored : "dark";
+    document.documentElement.dataset.theme = theme;
+  } catch {
+    document.documentElement.dataset.theme = "dark";
+  }
+})();
+`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${figtree.variable} ${outfit.variable}`}>
-      <body>{children}</body>
+    <html lang="es" className={`${figtree.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {children}
+      </body>
     </html>
   );
 }

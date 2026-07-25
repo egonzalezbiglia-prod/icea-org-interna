@@ -4,6 +4,7 @@ import type React from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Home, ImageIcon, Map as MapIcon, LogOut, RefreshCw, Search, Settings, X } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { assignmentId, hoursBetween, minutesFromTime, normalizeSearch } from "@/lib/domain";
 import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -264,6 +265,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           <h1>Grilla de turnos</h1>
         </div>
         <div className="topbar-actions">
+          <ThemeToggle />
           <Link className="ghost-button" href="/"><Home size={17} />Equipos</Link>
           <button className="ghost-button" onClick={() => setPlanOpen(true)}><MapIcon size={17} />Plano</button>
           <button className="ghost-button" onClick={refresh}><RefreshCw size={17} />Actualizar</button>

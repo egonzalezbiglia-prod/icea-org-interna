@@ -30,6 +30,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 - Admin mobile usa drawer lateral superpuesto para navegar secciones sin empujar contenido.
 - Horarios en mobile compacta día, inicio y fin para reducir ancho excesivo de controles.
 - Resultados de búsqueda se agrupan como agenda por día.
+- Se agregó selector de modo claro/oscuro con preferencia local por dispositivo.
 
 ### Técnico
 

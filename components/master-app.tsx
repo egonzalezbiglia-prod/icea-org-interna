@@ -4,6 +4,7 @@ import type React from "react";
 import Link from "next/link";
 import { ArrowLeft, Lock, Plus } from "lucide-react";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Team } from "@/lib/types";
 
 const MASTER_KEY = "Ezequiel#1993";
@@ -60,7 +61,7 @@ export function MasterApp({ initialTeams }: { initialTeams: Team[] }) {
   if (!isMaster) {
     return (
       <div className="app-shell">
-        <header className="topbar"><div className="topbar-title"><p className="eyebrow">ICEA 2026</p><h1>Panel master</h1></div><div className="topbar-actions"><Link className="ghost-button" href="/"><ArrowLeft size={17} />Equipos</Link></div></header>
+        <header className="topbar"><div className="topbar-title"><p className="eyebrow">ICEA 2026</p><h1>Panel master</h1></div><div className="topbar-actions"><ThemeToggle /><Link className="ghost-button" href="/"><ArrowLeft size={17} />Equipos</Link></div></header>
         <main className="admin-page"><form className="admin-login-card" onSubmit={enter}><Lock size={22} /><h2>Acceso master</h2><p>Crea y gestiona equipos independientes.</p><input autoFocus value={input} onChange={(event) => setInput(event.target.value)} type="password" placeholder="Clave master" />{message ? <span className="form-error">{message}</span> : null}<button className="primary-button" type="submit">Entrar</button></form></main>
       </div>
     );
@@ -68,7 +69,7 @@ export function MasterApp({ initialTeams }: { initialTeams: Team[] }) {
 
   return (
     <div className="app-shell">
-      <header className="topbar"><div className="topbar-title"><p className="eyebrow">ICEA 2026</p><h1>Panel master</h1></div><div className="topbar-actions"><Link className="ghost-button" href="/"><ArrowLeft size={17} />Equipos</Link></div></header>
+      <header className="topbar"><div className="topbar-title"><p className="eyebrow">ICEA 2026</p><h1>Panel master</h1></div><div className="topbar-actions"><ThemeToggle /><Link className="ghost-button" href="/"><ArrowLeft size={17} />Equipos</Link></div></header>
       <main className="admin-page">
         {message ? <section className="edit-strip"><p>{message}</p></section> : null}
         <section className="admin-card master-card">

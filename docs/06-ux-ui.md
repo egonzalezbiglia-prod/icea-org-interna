@@ -88,8 +88,18 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 Última actualización: 2026-07-25
 
 - La home inicial debe priorizar una selección simple, centrada y con identidad propia.
-- La home usa fondo oscuro exclusivo para separar la selección inicial del resto de la app operativa.
+- La home usa modo oscuro por defecto para separar la selección inicial del resto de la app operativa.
 - El título principal vive dentro del bloque de selección, no en el topbar.
 - Los equipos se presentan en lista vertical, no en grilla de tarjetas.
 - La acción de crear equipos no aparece en la home; vive solo en Panel Master.
 - Cada fila de equipo usa icono, nombre, descripción opcional y chevron.
+
+
+## Modo claro/oscuro
+
+Última actualización: 2026-07-25
+
+- La app permite elegir modo claro u oscuro desde los headers principales.
+- La preferencia se guarda por dispositivo en `localStorage` con la clave `icea-theme`.
+- Si no existe preferencia guardada, la app inicia en modo oscuro para respetar la identidad visual de la home.
+- El cambio de tema no modifica datos de Firestore ni sesiones de admin/master.

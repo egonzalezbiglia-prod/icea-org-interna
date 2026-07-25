@@ -4,6 +4,7 @@ import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Check, Home, Lock, Menu, MessageCircle, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Users, X } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -121,7 +122,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
-          <div className="topbar-actions"><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link></div>
+          <div className="topbar-actions"><ThemeToggle /><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link></div>
         </header>
         <main className="admin-page">
           <form className="admin-login-card" onSubmit={enterAdmin}>
@@ -141,7 +142,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
-        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
+        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><ThemeToggle /><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
       </header>
       <main className="admin-page">
         <section className="admin-workspace">

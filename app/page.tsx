@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Shield, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { listTeams } from "@/lib/repositories";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function HomePage() {
       <header className="topbar">
         <p className="eyebrow">ICEA 2026</p>
         <div className="topbar-actions">
+          <ThemeToggle />
           <Link className="ghost-button" href="/master"><Shield size={17} />Panel master</Link>
         </div>
       </header>

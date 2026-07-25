@@ -53,6 +53,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 - Horarios en mobile compacta día, inicio y fin para reducir ancho excesivo de controles.
 - Resultados de búsqueda se agrupan como agenda por día.
 - Se agregó selector de modo claro/oscuro con preferencia local por dispositivo.
+- Se implementó dark mode real en la grilla usando tokens `--grid-*` para celdas, encabezados y alertas.
 - Se compactaron las filas de equipo en la home para reducir peso visual.
 
 ### Técnico

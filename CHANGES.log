@@ -11,3 +11,5 @@
 - [CODEX] Implementé fechas configurables del congreso por equipo desde Panel Master (`congressDates`): la grilla usa esas fechas para el riel de días y la franja “ahora”; pendiente correr build/lint tras el cambio.
 - [CODEX] Ajusté ESLint para ignorar archivos generados (`.next`, `out`, `dist`, `next-env.d.ts`) porque `pnpm lint` estaba fallando sobre salida de build y no sobre código fuente.
 - [CODEX] Validé fechas configurables con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx` (`refresh` en useEffect y `<img>` del plano).
+- [CODEX] Implementé dark mode real para la grilla: reemplacé fondos claros hardcodeados por tokens `--grid-*` y documenté el criterio visual. Pendiente validar build/lint.
+- [CODEX] Validé dark mode real de grilla con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.

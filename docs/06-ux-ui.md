@@ -104,3 +104,12 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 - La preferencia se guarda por dispositivo en `localStorage` con la clave `icea-theme`.
 - Si no existe preferencia guardada, la app inicia en modo oscuro para respetar la identidad visual de la home.
 - El cambio de tema no modifica datos de Firestore ni sesiones de admin/master.
+
+## Dark mode de grilla
+
+Última actualización: 2026-07-25
+
+- La grilla debe usar tokens semánticos (`--grid-*`) para encabezados, celdas, columna de puestos, alertas y franja "ahora".
+- En modo claro mantiene lectura tipo papel.
+- En modo oscuro no debe conservar fondos blancos hardcodeados: tabla, selectores, estados y resultados deben integrarse con la paleta oscura.
+- Los estados de alerta deben seguir siendo distinguibles sin depender solo del color, usando texto/puntos/contraste.

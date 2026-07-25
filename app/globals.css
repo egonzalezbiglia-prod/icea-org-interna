@@ -18,6 +18,18 @@
   --font-heading: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-body: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --grid-head: #e5f1e6;
+  --grid-head-now: linear-gradient(180deg, #eaf98f, #e5f1e6);
+  --grid-now-ink: var(--warm-ink);
+  --grid-position: #f4f7ea;
+  --grid-cell: rgba(255, 255, 255, 0.78);
+  --grid-cell-focus: #f7fbef;
+  --grid-match: #d8f0e5;
+  --grid-now: rgba(228, 248, 106, 0.22);
+  --grid-warning: #f2ffc2;
+  --grid-danger: #f8ded8;
+  --grid-consecutive: #eef8d0;
+  --grid-muted: #7c8980;
 }
 
 :root[data-theme="dark"] {
@@ -36,6 +48,18 @@
   --warm-soft: rgba(223, 255, 124, 0.18);
   --graphite: #f2f1e8;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 24px 54px rgba(0, 0, 0, 0.4);
+  --grid-head: #1d332c;
+  --grid-head-now: linear-gradient(180deg, rgba(223, 255, 124, 0.34), #1d332c);
+  --grid-now-ink: var(--ink);
+  --grid-position: #172a24;
+  --grid-cell: rgba(255, 255, 255, 0.045);
+  --grid-cell-focus: #22382f;
+  --grid-match: rgba(44, 191, 149, 0.22);
+  --grid-now: rgba(223, 255, 124, 0.13);
+  --grid-warning: rgba(223, 255, 124, 0.18);
+  --grid-danger: rgba(213, 92, 68, 0.22);
+  --grid-consecutive: rgba(44, 191, 149, 0.15);
+  --grid-muted: #8f9a90;
 }
 
 * {
@@ -258,7 +282,7 @@ h3 {
 
 .search-field:hover,
 .select-field:hover {
-  background: #ffffff;
+  background: var(--surface-2);
   border-color: rgba(21, 127, 133, 0.24);
   box-shadow: 0 12px 28px rgba(30, 56, 54, 0.09);
   transform: translateY(-1px);
@@ -293,7 +317,7 @@ h3 {
   flex-wrap: wrap;
   margin: 0 0 1rem;
   padding: 0.8rem;
-  background: rgba(251, 255, 244, 0.74);
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
@@ -318,8 +342,8 @@ h3 {
 .person-results {
   margin: 0 0 1rem;
   padding: 1rem;
-  background: rgba(216, 240, 229, 0.68);
-  border: 1px solid rgba(21, 127, 133, 0.22);
+  background: color-mix(in srgb, var(--accent-soft) 68%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 8px;
 }
 
@@ -389,7 +413,7 @@ h3 {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.35rem 0;
-  border-top: 1px solid rgba(21, 127, 133, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .result-list-card li:first-child {
@@ -401,7 +425,7 @@ h3 {
   flex: 0 0 auto;
   color: var(--accent-ink);
   background: var(--accent-soft);
-  border: 1px solid rgba(21, 127, 133, 0.16);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
   border-radius: 999px;
   padding: 0.18rem 0.55rem;
   font-weight: 800;
@@ -487,7 +511,7 @@ h3 {
   z-index: 5;
   padding: 0.78rem;
   color: var(--ink-dim);
-  background: #e5f1e6;
+  background: var(--grid-head);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -514,7 +538,7 @@ h3 {
   min-width: 132px;
   max-width: 132px;
   padding: 0.5rem 0.7rem;
-  background: #f4f7ea;
+  background: var(--grid-position);
   text-align: left;
 }
 
@@ -536,12 +560,12 @@ h3 {
   min-width: 138px;
   height: 58px;
   padding: 0.42rem;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--grid-cell);
 }
 
 .schedule-grid td.match {
   color: var(--accent-ink);
-  background: #d8f0e5;
+  background: var(--grid-match);
   font-weight: 900;
 }
 
@@ -557,13 +581,13 @@ h3 {
 }
 
 .schedule-grid td input:focus {
-  background: #f7fbef;
-  border-color: rgba(21, 127, 133, 0.45);
-  box-shadow: 0 0 0 3px rgba(21, 127, 133, 0.14);
+  background: var(--grid-cell-focus);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .muted {
-  color: #7c8980;
+  color: var(--grid-muted);
 }
 
 .footer-verse {
@@ -884,7 +908,7 @@ h3 {
 }
 
 .admin-table-row.inactive {
-  background: #f8ded8;
+  background: var(--grid-danger);
 }
 
 .servers-table .admin-table-head,
@@ -1199,21 +1223,22 @@ h3 {
 }
 
 .schedule-grid td select:focus {
-  background: #f7fbef;
-  border-color: rgba(21, 127, 133, 0.45);
-  box-shadow: 0 0 0 3px rgba(21, 127, 133, 0.14);
+  background: var(--grid-cell-focus);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .schedule-grid td.cell-warning {
-  background: #f2ffc2;
+  background: var(--grid-warning);
 }
 
 .schedule-grid td.cell-danger {
-  background: #f8ded8;
+  background: var(--grid-danger);
 }
 
 .schedule-grid td.cell-consecutive {
-  box-shadow: inset 0 0 0 2px rgba(21, 127, 133, 0.36);
+  background: var(--grid-consecutive);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 36%, transparent);
 }
 
 .cell-alert {
@@ -1987,26 +2012,26 @@ h3 {
 }
 
 .schedule-grid thead th.nowcol {
-  color: var(--warm-ink);
-  background: linear-gradient(180deg, #eaf98f, #e5f1e6);
+  color: var(--grid-now-ink);
+  background: var(--grid-head-now);
 }
 
 .schedule-grid thead th.nowcol small {
-  color: var(--warm-ink);
+  color: var(--grid-now-ink);
   opacity: 0.85;
 }
 
 .schedule-grid td.nowcol {
-  background: rgba(228, 248, 106, 0.22);
+  background: var(--grid-now);
 }
 
 /* Los estados de alerta ganan sobre la franja "ahora" (se redeclaran despues). */
 .schedule-grid td.cell-warning {
-  background: #f2ffc2;
+  background: var(--grid-warning);
 }
 
 .schedule-grid td.cell-danger {
-  background: #f8ded8;
+  background: var(--grid-danger);
 }
 
 /* Nombre en celda + resaltado de la persona buscada */
@@ -2100,4 +2125,20 @@ h3 {
 .icon-option input:focus-visible + .icon-option-glyph {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+
+:root[data-theme="dark"] .schedule-wrap {
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .schedule-grid select,
+:root[data-theme="dark"] .schedule-grid td input {
+  color: var(--ink);
+  background-color: transparent;
+}
+
+:root[data-theme="dark"] .schedule-grid select option {
+  color: #1e2a26;
+  background: #f2f1e8;
 }

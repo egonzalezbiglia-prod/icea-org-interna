@@ -1,68 +1,129 @@
 # Modelo de datos
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-07-25
 
-## Objetivo
+## Firestore
 
-Documentar entidades, campos importantes y relaciones.
+Estructura principal:
+
+```txt
+teams/{teamId}
+  name
+  description
+  active
+  createdAt
+  updatedAt
+
+teams/{teamId}/servers/{serverId}
+teams/{teamId}/slots/{slotId}
+teams/{teamId}/positions/{positionId}
+teams/{teamId}/assignments/{assignmentId}
+teams/{teamId}/settings/plan
+teams/{teamId}/settings/rules
+```
 
 ## Entidades
 
-### `users`
-
-Descripción.
+### `Team`
 
 Campos:
 
 - `id`
-- `email`
-- `status`
-- `created_at`
+- `name`
+- `description`
+- `active`
+- `createdAt`
+- `updatedAt`
 
-Relaciones:
+### `Server`
 
-- Completar.
+Campos:
 
-### `example_entity`
+- `id`
+- `fullName`
+- `whatsapp`
+- `countryCode`
+- `dialCode`
+- `active`
+- `availability[]`
+- `createdAt`
+- `updatedAt`
 
-Descripción.
+### `AvailabilityRange`
+
+Campos:
+
+- `id`
+- `dayId`: `jueves`, `viernes`, `sabado`
+- `start`: HH:MM
+- `end`: HH:MM
+
+### `Slot`
+
+Campos:
+
+- `id`
+- `dayId`
+- `start`
+- `end`
+- `label`
+
+### `Position`
 
 Campos:
 
 - `id`
 - `name`
 
-## Relaciones principales
+### `Assignment`
 
-- `users.id` -> `example_entity.user_id`
+Campos:
 
-## Estados/enums
+- `id`: `{dayId}__{slotId}__{positionId}`
+- `dayId`
+- `slotId`
+- `positionId`
+- `serverId`
+- `serverName`
+- `updatedAt`
+- `updatedBy`
 
-```txt
-status:
-- active
-- paused
-- archived
-```
+### `TeamSettings`
 
-## Datos sensibles
+Campos:
 
-- Dato 1.
-- Dato 2.
+- `maxConsecutiveShifts`
+- `blockAfterMaxConsecutive`
+- `allowPartialAvailability`
+- `warnPartialAvailability`
+- `preventSameSlotDuplicate`
+- `updatedAt`
 
-## Reglas de retención
+### `Plan`
 
-- Qué se guarda.
-- Qué se puede eliminar.
-- Qué se anonimiza.
+Campos:
+
+- `imageUrl`
+- `note`
+- `updatedAt`
+
+## Defaults
+
+Equipos iniciales:
+
+- `organizacion-interna`: Organización Interna.
+- `tecnica`: Técnica.
+
+Reglas iniciales:
+
+- `maxConsecutiveShifts`: 2
+- `blockAfterMaxConsecutive`: true
+- `allowPartialAvailability`: true
+- `warnPartialAvailability`: true
+- `preventSameSlotDuplicate`: true
 
 ## Migraciones
 
-Registrar cambios relevantes:
-
-- AAAA-MM-DD: descripción.
-
-## Regla de mantenimiento
-
-Cada tabla, campo o relación nueva debe documentarse en este archivo.
+- 2026-07-25: se agrega modelo multi-equipo con `teams/{teamId}`.
+- 2026-07-25: Organización Interna mantiene fallback a colecciones root antiguas: `servers`, `slots`, `positions`, `assignments`, `settings/plan`.

@@ -71,3 +71,13 @@ Describir:
 ## Criterio
 
 Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe simplificarse.
+
+
+## Drawer mobile del admin
+
+Última actualización: 2026-07-25
+
+- En mobile, el menú de secciones del admin debe comportarse como shell/drawer lateral superpuesto.
+- El menú no debe empujar el contenido ni ocupar un bloque grande dentro del flujo de la página.
+- El drawer debe tener backdrop para cerrar tocando fuera y botón de cierre interno.
+- Las filas editables de horarios en mobile deben compactar día, inicio y fin para evitar controles excesivamente anchos.

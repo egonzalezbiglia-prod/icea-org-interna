@@ -1,51 +1,66 @@
 # Reglas de negocio
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-07-25
 
-## Objetivo
+## Separación por equipo
 
-Documentar reglas que el sistema debe respetar aunque cambie la UI o la implementación.
+Cada equipo tiene datos independientes:
 
-## Reglas principales
+- Servidores.
+- Horarios.
+- Posiciones.
+- Asignaciones.
+- Plano.
+- Reglas.
 
-### Regla 1
+La app debe reutilizar el mismo código, pero nunca mezclar datos entre equipos.
 
-Descripción.
+## Disponibilidad
 
-Criterios:
+- Cada servidor declara rangos libres por día.
+- La disponibilidad no está atada a turnos exactos.
+- Un servidor aparece en un desplegable si tiene disponibilidad completa o parcial, según reglas del equipo.
+- Si no tiene disponibilidad para el día/turno, no debe aparecer.
 
-- Completar.
+## Turnos consecutivos
 
-Excepciones:
+Configurable por equipo:
 
-- Completar.
+- `maxConsecutiveShifts`: cantidad máxima de turnos consecutivos.
+- `blockAfterMaxConsecutive`: si está activo, bloquea opciones que superan el máximo.
 
-### Regla 2
+Default actual:
 
-Descripción.
+- Máximo 2 turnos consecutivos.
+- Bloquea el tercero.
 
-## Estados importantes
+## Disponibilidad parcial
 
-- Estado 1: significado.
-- Estado 2: significado.
-- Estado 3: significado.
+Configurable por equipo:
 
-## Automatizaciones
+- `allowPartialAvailability`: permite seleccionar personas con cobertura parcial.
+- `warnPartialAvailability`: muestra alerta visual en celda si la disponibilidad es parcial.
 
-- Automatización 1.
-- Automatización 2.
+La alerta indica si falta cobertura al inicio, al final o en ambos lados del turno.
 
-## Restricciones
+## Duplicados en mismo turno
 
-- Restricción 1.
-- Restricción 2.
+Configurable por equipo:
 
-## Casos borde
+- `preventSameSlotDuplicate`: evita que una persona cubra más de una posición en el mismo turno.
 
-- Caso 1.
-- Caso 2.
+## Priorización del desplegable
 
-## Regla de mantenimiento
+Las opciones se ordenan para sugerir primero:
 
-Si una funcionalidad depende de una condición, permiso, fecha, estado, límite o validación, debe documentarse acá.
+- Personas con disponibilidad completa antes que parcial.
+- Personas con menor disponibilidad total.
+- Personas con menor porcentaje ocupado.
+- Personas con menos horas/turnos asignados.
+- Orden alfabético como desempate.
+
+## Servidores activos/inactivos
+
+- Un servidor inactivo no debe aparecer como opción nueva.
+- Si ya estaba asignado, la celda debe marcarse como riesgo.

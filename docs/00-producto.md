@@ -1,92 +1,51 @@
 # Producto
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-07-25
 
 ## Nombre del producto
 
-Completar.
+ICEA 2026 - Grilla de turnos por equipo
 
 ## Descripción corta
 
-Una frase clara que explique qué es el producto.
-
-Ejemplo:
-
-> Plataforma para [audiencia] que permite [acción principal] para lograr [resultado].
+Aplicación web para consultar y administrar grillas de turnos del congreso ICEA 2026, separadas por equipo.
 
 ## Problema que resuelve
 
-- ¿Qué problema existe hoy?
-- ¿Quién lo sufre?
-- ¿Qué pasa si no se resuelve?
-- ¿Por qué importa?
+- Cada equipo necesita cubrir posiciones por día y horario.
+- Los servidores necesitan consultar rápido sus turnos desde el celular.
+- Los admins necesitan modificar asignaciones, horarios, posiciones y reglas sin tocar código.
+- La información debe estar actualizada para todos los que acceden al link.
 
-## Usuario principal
+## Usuarios principales
 
-- Quién es.
-- Qué necesita.
-- Qué sabe hacer.
-- Qué le molesta o frustra.
-- Qué espera lograr.
-
-## Usuarios secundarios
-
-- Admins.
-- Supervisores.
-- Clientes.
-- Invitados.
-- Otros roles.
-
-## Propuesta de valor
-
-El producto ayuda a:
-
-- Completar.
-- Completar.
-- Completar.
+- Servidores: consultan turnos y posiciones.
+- Admins de equipo: gestionan servidores, horarios, posiciones, plano y reglas.
+- Master: crea y edita equipos independientes.
 
 ## Alcance actual
 
 Incluye:
 
-- Completar.
-- Completar.
+- Home de selección de equipo.
+- Grilla pública por equipo.
+- Admin por equipo con clave común.
+- Panel Master para crear y editar equipos.
+- Reglas configurables por equipo.
+- Firestore separado por equipo.
 
-No incluye:
+No incluye por ahora:
 
-- Completar.
-- Completar.
-
-## MVP
-
-El MVP no es todo el producto. Es la primera versión útil que permite validar el núcleo.
-
-Debe incluir:
-
-- Funcionalidad mínima 1.
-- Funcionalidad mínima 2.
-- Funcionalidad mínima 3.
-
-Debe dejar afuera:
-
-- Funcionalidad futura 1.
-- Funcionalidad futura 2.
+- Autenticación por usuario individual.
+- Auditoría detallada por admin.
+- Notificaciones automáticas.
+- Importación/exportación masiva.
 
 ## Principios del producto
 
-Ejemplos:
-
-- Simplicidad antes que complejidad.
-- Privacidad antes que conveniencia.
-- Mobile-first.
-- Admin simple antes que automatización avanzada.
-- Claridad antes que diseño decorativo.
-
-## Métrica de éxito
-
-¿Cómo vamos a saber que el producto funciona?
-
-- Métrica 1.
-- Métrica 2.
-- Métrica 3.
+- Mobile-first para consulta y cambios rápidos.
+- Separación real entre equipos.
+- Un solo código reutilizable para todos los equipos.
+- Admin simple, rápido y con baja fricción.
+- Diseño sobrio, cálido y alineado a identidad ICEA.

@@ -2,31 +2,36 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
-## AAAA-MM-DD
-
-### Documentación
-
-- Se creó la documentación inicial del producto.
+## 2026-07-25
 
 ### Producto
 
-- Completar.
-
-### UX/UI
-
-- Completar.
-
-### Datos
-
-- Completar.
+- Se convirtió la app en multi-equipo.
+- Se agregó home para seleccionar equipo.
+- Se agregaron equipos iniciales: Organización Interna y Técnica.
+- Se agregó Panel Master para crear y gestionar equipos.
 
 ### Reglas de negocio
 
-- Completar.
+- Las reglas de asignación pasan a ser configurables por equipo.
+- Se agregó menú Reglas en el admin de cada equipo.
+
+### Datos
+
+- Firestore pasa a estructura `teams/{teamId}/...`.
+- Se mantiene fallback para datos antiguos de Organización Interna en colecciones root.
+
+### UX/UI
+
+- Admin mobile tiene menú hamburguesa para secciones.
+- Admin mobile usa drawer lateral superpuesto para navegar secciones sin empujar contenido.
+- Horarios en mobile compacta día, inicio y fin para reducir ancho excesivo de controles.
+- Resultados de búsqueda se agrupan como agenda por día.
 
 ### Técnico
 
-- Completar.
+- Nuevas rutas: `/equipos/{teamId}`, `/equipos/{teamId}/admin`, `/master`.
+- Nuevas APIs: `/api/master` y APIs existentes con `teamId`.
 
 ## Qué registrar
 
@@ -37,9 +42,3 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 - Migraciones.
 - Cambios de UX relevantes.
 - Decisiones técnicas que afecten el futuro.
-
-## Qué no registrar
-
-- Correcciones menores de texto.
-- Refactors sin impacto funcional.
-- Cambios internos que no afectan comportamiento.

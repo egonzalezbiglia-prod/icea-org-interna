@@ -145,7 +145,9 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
       </header>
       <main className="admin-page">
         <section className="admin-workspace">
+          {mobileMenuOpen ? <button className="admin-sidebar-backdrop" type="button" aria-label="Cerrar menu" onClick={() => setMobileMenuOpen(false)} /> : null}
           <aside id="admin-sections" className={"admin-sidebar " + (mobileMenuOpen ? "open" : "")} aria-label="Secciones admin">
+            <div className="admin-sidebar-mobile-head"><strong>Menu</strong><button className="icon-button" type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Cerrar menu"><X size={17} /></button></div>
             {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}>{tab.icon}<span>{tab.label}</span><strong>{tab.count}</strong></button>)}
           </aside>
           <div className="admin-main">

@@ -1,58 +1,75 @@
 # Flujos principales
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-07-25
 
-## Objetivo
+## Flujo: elegir equipo
 
-Documentar recorridos clave para validar que el producto funciona de punta a punta.
-
-## Flujo 1: nombre del flujo
-
-Rol:
-
-- Completar.
+Rol: visitante.
 
 Pasos:
 
-1. Completar.
-2. Completar.
-3. Completar.
+1. Entrar a `/`.
+2. Ver lista de equipos activos.
+3. Seleccionar un equipo.
+4. Entrar a `/equipos/{teamId}`.
 
 Resultado esperado:
 
-- Completar.
+- Se muestra la grilla pública del equipo seleccionado.
 
-Errores posibles:
+## Flujo: consultar turnos
 
-- Completar.
-
-## Flujo 2: nombre del flujo
-
-Rol:
-
-- Completar.
+Rol: visitante o servidor.
 
 Pasos:
 
-1. Completar.
-2. Completar.
+1. Entrar a la grilla del equipo.
+2. Buscar por nombre.
+3. Ver turnos agrupados por día.
+4. Revisar horario y posición.
 
 Resultado esperado:
 
-- Completar.
+- La persona ve sus turnos sin recorrer toda la grilla.
 
-## Estados vacíos
+## Flujo: administrar equipo
 
-- Sin datos.
-- Sin permisos.
-- Sin conexión.
-- Primera vez usando el producto.
+Rol: admin de equipo.
+
+Pasos:
+
+1. Entrar a `/equipos/{teamId}/admin`.
+2. Ingresar clave admin.
+3. Usar menú: Servidores, Horarios, Posiciones o Reglas.
+4. Guardar cambios.
+5. Volver a la grilla.
+
+Resultado esperado:
+
+- Los cambios afectan solo al equipo actual.
+
+## Flujo: crear equipo
+
+Rol: master.
+
+Pasos:
+
+1. Entrar a `/master`.
+2. Ingresar clave master.
+3. Crear equipo con nombre, descripción y estado activo.
+4. Abrir grilla o admin del equipo creado.
+
+Resultado esperado:
+
+- El equipo queda disponible en la home y con datos iniciales por defecto.
 
 ## Validación manual antes de deploy
 
-- [ ] Flujo principal 1.
-- [ ] Flujo principal 2.
-- [ ] Login/logout.
-- [ ] Mobile.
-- [ ] Permisos.
+- [ ] Home lista equipos activos.
+- [ ] Organización Interna abre en `/equipos/organizacion-interna`.
+- [ ] Técnica abre en `/equipos/tecnica`.
+- [ ] Admin por equipo guarda cambios aislados.
+- [ ] Reglas por equipo afectan desplegables.
+- [ ] Panel Master crea un equipo nuevo.
+- [ ] Mobile admin abre secciones en drawer lateral sin empujar contenido.

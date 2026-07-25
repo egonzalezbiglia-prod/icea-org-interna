@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Lock, MessageCircle, Pencil, Plus, Rows3, Trash2, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Lock, Menu, MessageCircle, Pencil, Plus, Rows3, Trash2, Users, X } from "lucide-react";
 import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -72,6 +72,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
   const [adminInput, setAdminInput] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("servers");
   const [message, setMessage] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAdmin = adminKey === ADMIN_KEY;
 
   function enterAdmin(event: React.FormEvent) {
@@ -137,12 +138,12 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-title"><p className="eyebrow">ICEA 2026 · ORGANIZACIÓN INTERNA</p><h1>Admin</h1></div>
-        <div className="topbar-actions"><Link className="ghost-button" href="/"><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
+        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><Link className="ghost-button" href="/"><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
       </header>
       <main className="admin-page">
         <section className="admin-workspace">
-          <aside className="admin-sidebar" aria-label="Secciones admin">
-            {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.icon}<span>{tab.label}</span><strong>{tab.count}</strong></button>)}
+          <aside id="admin-sections" className={"admin-sidebar " + (mobileMenuOpen ? "open" : "")} aria-label="Secciones admin">
+            {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}>{tab.icon}<span>{tab.label}</span><strong>{tab.count}</strong></button>)}
           </aside>
           <div className="admin-main">
             {message ? <section className="edit-strip"><p>{message}</p></section> : null}

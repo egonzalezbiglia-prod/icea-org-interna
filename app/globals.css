@@ -313,6 +313,22 @@ h3 {
   gap: 0.65rem;
 }
 
+.results-by-day {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.result-day-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.result-day-group h3 {
+  margin: 0;
+  color: var(--accent-ink);
+  font-size: 0.92rem;
+}
+
 .result-card {
   display: grid;
   gap: 0.2rem;
@@ -639,6 +655,10 @@ h3 {
   font-size: 0.78rem;
 }
 
+.admin-menu-toggle {
+  display: none;
+}
+
 .admin-main {
   min-width: 0;
 }
@@ -907,28 +927,122 @@ h3 {
 }
 
 @media (max-width: 760px) {
-  .admin-sidebar,
+  .admin-page {
+    padding-top: 0.8rem;
+  }
+
+  .admin-menu-toggle {
+    display: inline-flex;
+  }
+
+  .admin-workspace {
+    gap: 0.8rem;
+  }
+
+  .admin-sidebar {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding: 0.35rem;
+  }
+
+  .admin-sidebar.open {
+    display: grid;
+  }
+
+  .admin-sidebar button {
+    min-height: 58px;
+    padding: 0 0.85rem;
+  }
+
   .server-new-form,
   .server-summary-table .admin-table-head,
-  .server-summary-row,
   .server-editor-grid,
   .slot-new-form,
   .position-new-form,
   .servers-table .admin-table-head,
   .server-data-row,
   .slots-table .admin-table-head,
-  .slot-data-row,
-  .positions-table .admin-table-head,
-  .position-data-row {
+  .positions-table .admin-table-head {
     grid-template-columns: 1fr;
+  }
+
+  .admin-table {
+    overflow-x: visible;
   }
 
   .admin-table-head {
     display: none;
   }
 
-  .row-actions {
-    justify-content: flex-start;
+  .admin-card-head {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .admin-card-head .primary-button {
+    min-height: 48px;
+    padding: 0 1.1rem;
+  }
+
+  .admin-table-row {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .server-summary-row {
+    grid-template-columns: 1fr auto;
+    gap: 0.55rem;
+  }
+
+  .server-summary-row > strong,
+  .server-phone-cell,
+  .capacity-pill,
+  .availability-days {
+    grid-column: 1 / -1;
+  }
+
+  .capacity-pill {
+    width: 100%;
+  }
+
+  .server-summary-row > .status-check {
+    align-self: center;
+    justify-self: start;
+  }
+
+  .server-summary-row > .row-actions {
+    justify-self: start;
+  }
+
+  .slot-data-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.55rem;
+  }
+
+  .slot-data-row select,
+  .slot-data-row .row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .slot-data-row .row-actions {
+    justify-content: flex-end;
+  }
+
+  .position-data-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 0.55rem;
+  }
+
+  .position-data-row > strong {
+    align-self: center;
+  }
+
+  .position-data-row > input {
+    grid-column: 2;
+  }
+
+  .position-data-row > .row-actions {
+    grid-column: 2;
+    justify-content: flex-end;
   }
 }
 

@@ -168,7 +168,6 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         assignment,
         day: data.days.find((day) => day.id === assignment.dayId),
         slot: data.slots.find((slot) => slot.id === assignment.slotId),
-        position: data.positions.find((position) => position.id === assignment.positionId),
       }))
       .sort((a, b) => {
         const dayOrder = data.days.findIndex((day) => day.id === a.assignment.dayId) - data.days.findIndex((day) => day.id === b.assignment.dayId);
@@ -177,6 +176,13 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         return a.assignment.positionId - b.assignment.positionId;
       });
   }, [data, search]);
+
+  const personalShiftsByDay = useMemo(() => data.days
+    .map((day) => ({
+      day,
+      shifts: personalShifts.filter((shift) => shift.assignment.dayId === day.id),
+    }))
+    .filter((group) => group.shifts.length > 0), [data.days, personalShifts]);
 
   useEffect(() => {
     if (window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAdminKey(ADMIN_KEY);
@@ -278,8 +284,15 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           <section className="person-results">
             <div className="section-heading"><h2>Turnos encontrados</h2><span>{personalShifts.length} coincidencias</span></div>
             {personalShifts.length ? (
-              <div className="results-grid">
-                {personalShifts.map(({ assignment, day, slot, position }) => <article className="result-card" key={assignment.id}><strong>{assignment.serverName}</strong><span>{day?.label} · {slot?.label}</span><small>Pos. {assignment.positionId}{position?.name ? " · " + position.name : ""}</small></article>)}
+              <div className="results-by-day">
+                {personalShiftsByDay.map(({ day, shifts }) => (
+                  <section className="result-day-group" key={day.id}>
+                    <h3>{day.label}</h3>
+                    <div className="results-grid">
+                      {shifts.map(({ assignment, slot }) => <article className="result-card" key={assignment.id}><strong>{assignment.serverName}</strong><span>{slot?.label}</span><small>Pos. {assignment.positionId}</small></article>)}
+                    </div>
+                  </section>
+                ))}
               </div>
             ) : <p className="empty-state">No hay turnos asignados para esa busqueda.</p>}
           </section>

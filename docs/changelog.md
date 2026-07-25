@@ -24,6 +24,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 ### UX/UI
 
 - Se rediseñó la home inicial de equipos como bloque centrado con lista vertical y sin acceso directo para crear equipos.
+- Se ajustó la home inicial a una pantalla oscura exclusiva con filas grandes e iconos por equipo.
 - Se agregó botón Equipos/Home en grilla y admin para no depender del back del navegador.
 - Admin mobile tiene menú hamburguesa para secciones.
 - Admin mobile usa drawer lateral superpuesto para navegar secciones sin empujar contenido.

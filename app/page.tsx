@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { ChevronRight, Shield } from "lucide-react";
+import { ChevronRight, Shield, SlidersHorizontal, UsersRound } from "lucide-react";
 import { listTeams } from "@/lib/repositories";
 
 export const dynamic = "force-dynamic";
 
+function TeamIcon({ teamId }: { teamId: string }) {
+  if (teamId === "tecnica") return <SlidersHorizontal size={25} />;
+  return <UsersRound size={25} />;
+}
+
 export default async function HomePage() {
   const teams = (await listTeams()).filter((team) => team.active);
   return (
-    <div className="app-shell">
+    <div className="app-shell home-shell">
       <header className="topbar">
         <p className="eyebrow">ICEA 2026</p>
         <div className="topbar-actions">
@@ -24,7 +29,7 @@ export default async function HomePage() {
           <div className="team-list">
             {teams.map((team) => (
               <Link className="team-row-card" href={`/equipos/${team.id}`} key={team.id}>
-                <span className="team-row-mono" aria-hidden="true">{team.name.charAt(0)}</span>
+                <span className="team-row-mono" aria-hidden="true"><TeamIcon teamId={team.id} /></span>
                 <span className="team-row-body">
                   <strong>{team.name}</strong>
                   {team.description ? <span>{team.description}</span> : null}

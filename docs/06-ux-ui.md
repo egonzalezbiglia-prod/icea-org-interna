@@ -87,8 +87,9 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 
 Última actualización: 2026-07-25
 
-- La home inicial debe priorizar una selección simple y centrada de equipo.
+- La home inicial debe priorizar una selección simple, centrada y con identidad propia.
+- La home usa fondo oscuro exclusivo para separar la selección inicial del resto de la app operativa.
 - El título principal vive dentro del bloque de selección, no en el topbar.
 - Los equipos se presentan en lista vertical, no en grilla de tarjetas.
 - La acción de crear equipos no aparece en la home; vive solo en Panel Master.
-- Cada fila de equipo usa monograma, nombre, descripción opcional y chevron.
+- Cada fila de equipo usa icono, nombre, descripción opcional y chevron.

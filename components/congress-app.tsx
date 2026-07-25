@@ -288,9 +288,12 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                 {personalShiftsByDay.map(({ day, shifts }) => (
                   <section className="result-day-group" key={day.id}>
                     <h3>{day.label}</h3>
-                    <div className="results-grid">
-                      {shifts.map(({ assignment, slot }) => <article className="result-card" key={assignment.id}><strong>{assignment.serverName}</strong><span>{slot?.label}</span><small>Pos. {assignment.positionId}</small></article>)}
-                    </div>
+                    <article className="result-card result-list-card">
+                      <strong>{shifts[0]?.assignment.serverName}</strong>
+                      <ul>
+                        {shifts.map(({ assignment, slot }) => <li key={assignment.id}><span>{slot?.label}</span><small>Pos. {assignment.positionId}</small></li>)}
+                      </ul>
+                    </article>
                   </section>
                 ))}
               </div>

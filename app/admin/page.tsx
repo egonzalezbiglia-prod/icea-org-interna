@@ -1,9 +1,6 @@
-import { AdminApp } from "@/components/admin-app";
-import { getSchedulePayload } from "@/lib/repositories";
+import { redirect } from "next/navigation";
+import { DEFAULT_TEAM_ID } from "@/lib/domain";
 
-export const dynamic = "force-dynamic";
-
-export default async function AdminPage() {
-  const initialData = await getSchedulePayload();
-  return <AdminApp initialData={initialData} />;
+export default function AdminPage() {
+  redirect('/equipos/' + DEFAULT_TEAM_ID + '/admin');
 }

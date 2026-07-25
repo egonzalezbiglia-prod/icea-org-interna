@@ -108,8 +108,8 @@ function runLengthFor(serverId: string, candidate: Slot, assignments: Assignment
   return length;
 }
 
-function serverAlreadyInSlot(serverId: string, slotId: string, assignments: Assignment[], currentAssignmentId: string) {
-  return assignments.some((assignment) => assignment.id !== currentAssignmentId && assignment.slotId === slotId && assignment.serverId === serverId);
+function serverAlreadyInSlot(serverId: string, slotId: string, assignments: Assignment[], currentAssignmentId: string, preventSameSlotDuplicate: boolean) {
+  return preventSameSlotDuplicate && assignments.some((assignment) => assignment.id !== currentAssignmentId && assignment.slotId === slotId && assignment.serverId === serverId);
 }
 
 function optionsForCell(data: SchedulePayload, slot: Slot, currentAssignmentId: string): ServerOption[] {
@@ -129,9 +129,9 @@ function optionsForCell(data: SchedulePayload, slot: Slot, currentAssignmentId: 
         shiftCount,
       };
     })
-    .filter((option) => option.fit !== "none")
-    .filter((option) => !serverAlreadyInSlot(option.server.id, slot.id, data.assignments, currentAssignmentId))
-    .filter((option) => runLengthFor(option.server.id, slot, data.assignments, slotsById, currentAssignmentId) <= 2)
+    .filter((option) => data.settings.allowPartialAvailability ? option.fit !== "none" : option.fit === "complete")
+    .filter((option) => !serverAlreadyInSlot(option.server.id, slot.id, data.assignments, currentAssignmentId, data.settings.preventSameSlotDuplicate))
+    .filter((option) => !data.settings.blockAfterMaxConsecutive || runLengthFor(option.server.id, slot, data.assignments, slotsById, currentAssignmentId) <= data.settings.maxConsecutiveShifts)
     .sort((a, b) => {
       if (isPartial(a.fit) !== isPartial(b.fit)) return isPartial(a.fit) ? 1 : -1;
       if (a.availableHours !== b.availableHours) return a.availableHours - b.availableHours;
@@ -148,6 +148,8 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   const [activeDay, setActiveDay] = useState<DayId>(initialData.days[0]?.id ?? "jueves");
   const [query, setQuery] = useState("");
   const [adminKey, setAdminKey] = useState("");
+  const teamId = initialData.team.id;
+  const adminSessionKey = `${ADMIN_SESSION_KEY}:${teamId}`;
   const [message, setMessage] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -185,8 +187,8 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     .filter((group) => group.shifts.length > 0), [data.days, personalShifts]);
 
   useEffect(() => {
-    if (window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAdminKey(ADMIN_KEY);
-  }, []);
+    if (window.sessionStorage.getItem(adminSessionKey) === "1") setAdminKey(ADMIN_KEY);
+  }, [adminSessionKey]);
 
   useEffect(() => {
     const interval = window.setInterval(() => refresh().catch(() => undefined), 60_000);
@@ -196,7 +198,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   async function refresh() {
     setMessage("");
     try {
-      const next = await apiJson<SchedulePayload>("/api/schedule");
+      const next = await apiJson<SchedulePayload>(`/api/schedule?teamId=${encodeURIComponent(teamId)}`);
       setData(next);
       if (isAdmin) setMessage("Grilla actualizada.");
     } catch (error) {
@@ -206,7 +208,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
 
   function leaveAdmin() {
     setAdminKey("");
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    window.sessionStorage.removeItem(adminSessionKey);
     setMessage("Modo admin cerrado.");
   }
 
@@ -218,7 +220,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const result = await apiJson<{ assignment: Assignment | null }>("/api/schedule", {
         method: "PATCH",
-        body: JSON.stringify({ dayId, slotId, positionId, serverId, editKey: adminKey }),
+        body: JSON.stringify({ teamId, dayId, slotId, positionId, serverId, editKey: adminKey }),
       });
       setData((current) => {
         const next = current.assignments.filter((assignment) => assignment.id !== id);
@@ -244,7 +246,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const result = await apiJson<{ plan: SchedulePayload["plan"] }>("/api/plan", {
         method: "PATCH",
-        body: JSON.stringify({ imageUrl, note, editKey: adminKey }),
+        body: JSON.stringify({ teamId, imageUrl, note, editKey: adminKey }),
       });
       setData((current) => ({ ...current, plan: result.plan }));
       setMessage("Plano actualizado.");
@@ -258,7 +260,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-title">
-          <p className="eyebrow">ICEA 2026 · ORGANIZACIÓN INTERNA</p>
+          <p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p>
           <h1>Grilla de turnos</h1>
         </div>
         <div className="topbar-actions">
@@ -266,10 +268,10 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           <button className="ghost-button" onClick={refresh}><RefreshCw size={17} />Actualizar</button>
           {isAdmin ? (
             <>
-              <Link className="ghost-button" href="/admin"><Settings size={17} />Admin</Link>
+              <Link className="ghost-button" href={`/equipos/${teamId}/admin`}><Settings size={17} />Admin</Link>
               <button className="primary-button" onClick={leaveAdmin}><LogOut size={17} />Salir admin</button>
             </>
-          ) : <Link className="primary-button" href="/admin"><Settings size={17} />Admin</Link>}
+          ) : <Link className="primary-button" href={`/equipos/${teamId}/admin`}><Settings size={17} />Admin</Link>}
         </div>
       </header>
 
@@ -316,8 +318,8 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                     const assignedServer = assignment?.serverId ? servers.get(assignment.serverId) : undefined;
                     const fit = availabilityFit(assignedServer, slot);
                     const inactive = Boolean(assignment?.serverId && assignedServer && !assignedServer.active);
-                    const partial = isPartial(fit);
-                    const consecutive = assignment?.serverId ? runLengthFor(assignment.serverId, slot, data.assignments, slotsById) >= 2 : false;
+                    const partial = data.settings.warnPartialAvailability && isPartial(fit);
+                    const consecutive = assignment?.serverId ? runLengthFor(assignment.serverId, slot, data.assignments, slotsById) >= data.settings.maxConsecutiveShifts : false;
                     const options = optionsForCell(data, slot, id);
                     const cellClass = [inactive ? "cell-danger" : "", partial ? "cell-warning" : "", consecutive ? "cell-consecutive" : ""].filter(Boolean).join(" ");
                     return (

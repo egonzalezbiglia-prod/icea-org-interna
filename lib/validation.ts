@@ -49,6 +49,21 @@ const availabilitySchema = z.object({
   end: timeSchema,
 });
 
+const settingsSchema = z.object({
+  maxConsecutiveShifts: z.number().int().min(1).max(12),
+  blockAfterMaxConsecutive: z.boolean(),
+  allowPartialAvailability: z.boolean(),
+  warnPartialAvailability: z.boolean(),
+  preventSameSlotDuplicate: z.boolean(),
+});
+
+const teamSchema = z.object({
+  id: z.string().max(80).optional(),
+  name: z.string().min(1, "Nombre requerido").max(100),
+  description: z.string().max(160).nullable().optional(),
+  active: z.boolean().default(true),
+});
+
 const serverSchema = z.object({
   id: z.string().optional(),
   fullName: z.string().min(1, "Nombre requerido").max(120),
@@ -65,4 +80,9 @@ export const configSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("deletePosition"), positionId: z.number().int().positive(), editKey: z.string().optional() }),
   z.object({ type: z.literal("upsertServer"), server: serverSchema, editKey: z.string().optional() }),
   z.object({ type: z.literal("deleteServer"), serverId: z.string().min(1), editKey: z.string().optional() }),
+  z.object({ type: z.literal("updateSettings"), settings: settingsSchema, editKey: z.string().optional() }),
+]);
+
+export const masterSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("upsertTeam"), team: teamSchema, masterKey: z.string().optional() }),
 ]);

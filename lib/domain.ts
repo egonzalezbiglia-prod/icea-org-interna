@@ -1,4 +1,4 @@
-import type { Day, DayId, Position, Slot } from "@/lib/types";
+import type { Day, DayId, Position, Slot, Team, TeamSettings } from "@/lib/types";
 
 export const DAYS: Day[] = [
   { id: "jueves", label: "Jueves" },
@@ -86,4 +86,27 @@ export function cleanPhone(value: string) {
 export function whatsappUrl(dialCode: string, phone: string) {
   const digits = cleanPhone(phone);
   return digits ? `https://wa.me/${dialCode}${digits}` : "";
+}
+
+export const DEFAULT_TEAM_ID = "organizacion-interna";
+
+export const DEFAULT_TEAMS: Team[] = [
+  { id: "organizacion-interna", name: "Organización Interna", description: "Equipo de servidores y ujieres", active: true, createdAt: null, updatedAt: null },
+  { id: "tecnica", name: "Técnica", description: "Equipo técnico", active: true, createdAt: null, updatedAt: null },
+];
+
+export const DEFAULT_TEAM_SETTINGS: TeamSettings = {
+  maxConsecutiveShifts: 2,
+  blockAfterMaxConsecutive: true,
+  allowPartialAvailability: true,
+  warnPartialAvailability: true,
+  preventSameSlotDuplicate: true,
+  updatedAt: null,
+};
+
+export function slugifyTeamId(value: string) {
+  return normalizeSearch(value)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "equipo";
 }

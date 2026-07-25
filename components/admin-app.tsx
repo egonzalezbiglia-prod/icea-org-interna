@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Lock, Menu, MessageCircle, Pencil, Plus, Rows3, Trash2, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Lock, Menu, MessageCircle, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Users, X } from "lucide-react";
 import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
@@ -11,7 +11,7 @@ const ADMIN_KEY = "1icea2026";
 const ADMIN_SESSION_KEY = "icea-admin-ok";
 const NEW_SERVER_AVAILABILITY_TEMPLATE = "jueves 13:00-18:00\nviernes 08:00-13:00\nsabado 08:00-13:00";
 
-type AdminTab = "servers" | "slots" | "positions";
+type AdminTab = "servers" | "slots" | "positions" | "rules";
 
 function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   return fetch(url, {
@@ -68,7 +68,9 @@ function parseAvailabilityText(value: string): AvailabilityRange[] {
 
 export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
   const [data, setData] = useState(initialData);
-  const [adminKey, setAdminKey] = useState(() => (typeof window !== "undefined" && window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1" ? ADMIN_KEY : ""));
+  const teamId = initialData.team.id;
+  const adminSessionKey = `${ADMIN_SESSION_KEY}:${teamId}`;
+  const [adminKey, setAdminKey] = useState(() => (typeof window !== "undefined" && window.sessionStorage.getItem(adminSessionKey) === "1" ? ADMIN_KEY : ""));
   const [adminInput, setAdminInput] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("servers");
   const [message, setMessage] = useState("");
@@ -79,7 +81,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     event.preventDefault();
     if (adminInput === ADMIN_KEY) {
       setAdminKey(ADMIN_KEY);
-      window.sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+      window.sessionStorage.setItem(adminSessionKey, "1");
       setAdminInput("");
       setMessage("");
       return;
@@ -89,7 +91,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
 
   function leaveAdmin() {
     setAdminKey("");
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    window.sessionStorage.removeItem(adminSessionKey);
     setMessage("Sesion admin cerrada.");
   }
 
@@ -98,7 +100,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const next = await apiJson<SchedulePayload>("/api/config", {
         method: "PATCH",
-        body: JSON.stringify({ ...body, editKey: adminKey }),
+        body: JSON.stringify({ ...body, teamId, editKey: adminKey }),
       });
       setData(next);
       setMessage("Cambios guardados.");
@@ -111,20 +113,21 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     { id: "servers", label: "Servidores", icon: <Users size={17} />, count: data.servers.length },
     { id: "slots", label: "Horarios", icon: <CalendarClock size={17} />, count: data.slots.length },
     { id: "positions", label: "Posiciones", icon: <Rows3 size={17} />, count: data.positions.length },
+    { id: "rules", label: "Reglas", icon: <SlidersHorizontal size={17} />, count: data.settings.maxConsecutiveShifts },
   ];
 
   if (!isAdmin) {
     return (
       <div className="app-shell">
         <header className="topbar">
-          <div className="topbar-title"><p className="eyebrow">ICEA 2026 · ORGANIZACIÓN INTERNA</p><h1>Admin</h1></div>
-          <div className="topbar-actions"><Link className="ghost-button" href="/"><ArrowLeft size={17} />Grilla</Link></div>
+          <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
+          <div className="topbar-actions"><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link></div>
         </header>
         <main className="admin-page">
           <form className="admin-login-card" onSubmit={enterAdmin}>
             <Lock size={22} />
             <h2>Acceso admin</h2>
-            <p>Gestiona servidores, horarios y posiciones de organizacion interna.</p>
+            <p>Gestiona servidores, horarios, posiciones y reglas del equipo.</p>
             <input autoFocus value={adminInput} onChange={(event) => setAdminInput(event.target.value)} type="password" placeholder="Clave admin" />
             {message ? <span className="form-error">{message}</span> : null}
             <button className="primary-button" type="submit">Entrar</button>
@@ -137,8 +140,8 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="topbar-title"><p className="eyebrow">ICEA 2026 · ORGANIZACIÓN INTERNA</p><h1>Admin</h1></div>
-        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><Link className="ghost-button" href="/"><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
+        <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
+        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
       </header>
       <main className="admin-page">
         <section className="admin-workspace">
@@ -150,6 +153,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
             {activeTab === "servers" ? <ServersAdmin data={data} onMutate={mutateConfig} /> : null}
             {activeTab === "slots" ? <SlotsAdmin data={data} onMutate={mutateConfig} /> : null}
             {activeTab === "positions" ? <PositionsAdmin data={data} onMutate={mutateConfig} /> : null}
+            {activeTab === "rules" ? <RulesAdmin data={data} onMutate={mutateConfig} /> : null}
           </div>
         </section>
       </main>
@@ -306,6 +310,37 @@ function PositionsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (
         <div className="admin-table-head"><span>#</span><span>Nombre</span><span>Acciones</span></div>
         {data.positions.map((position) => <form className="admin-table-row position-data-row" key={position.id} onSubmit={(event) => savePosition(event, position)}><strong>{position.id}</strong><input name="name" defaultValue={position.name} aria-label="Nombre de posicion" /><div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete("la posicion " + position.id) && onMutate({ type: "deletePosition", positionId: position.id })} aria-label="Eliminar posicion"><Trash2 size={16} /></button></div></form>)}
       </div>
+    </section>
+  );
+}
+
+function RulesAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
+  async function saveRules(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await onMutate({
+      type: "updateSettings",
+      settings: {
+        maxConsecutiveShifts: Number(form.get("maxConsecutiveShifts") ?? data.settings.maxConsecutiveShifts),
+        blockAfterMaxConsecutive: form.get("blockAfterMaxConsecutive") === "on",
+        allowPartialAvailability: form.get("allowPartialAvailability") === "on",
+        warnPartialAvailability: form.get("warnPartialAvailability") === "on",
+        preventSameSlotDuplicate: form.get("preventSameSlotDuplicate") === "on",
+      },
+    });
+  }
+
+  return (
+    <section className="admin-card">
+      <div className="admin-card-head"><div><h3>Reglas</h3><span>Configuración exclusiva de {data.team.name}</span></div></div>
+      <form className="rules-form" onSubmit={saveRules}>
+        <label><span>Máximo de turnos consecutivos</span><input name="maxConsecutiveShifts" type="number" min="1" max="12" defaultValue={data.settings.maxConsecutiveShifts} /></label>
+        <label className="switch-row"><input name="blockAfterMaxConsecutive" type="checkbox" defaultChecked={data.settings.blockAfterMaxConsecutive} /><span>Bloquear cuando supera el máximo</span></label>
+        <label className="switch-row"><input name="allowPartialAvailability" type="checkbox" defaultChecked={data.settings.allowPartialAvailability} /><span>Permitir disponibilidad parcial</span></label>
+        <label className="switch-row"><input name="warnPartialAvailability" type="checkbox" defaultChecked={data.settings.warnPartialAvailability} /><span>Marcar disponibilidad parcial con alerta</span></label>
+        <label className="switch-row"><input name="preventSameSlotDuplicate" type="checkbox" defaultChecked={data.settings.preventSameSlotDuplicate} /><span>Evitar repetir servidor en el mismo turno</span></label>
+        <div className="row-actions"><button className="primary-button" type="submit">Guardar reglas</button></div>
+      </form>
     </section>
   );
 }

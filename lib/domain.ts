@@ -1,4 +1,4 @@
-import type { Day, DayId, Position, Slot, Team, TeamSettings } from "@/lib/types";
+import type { CongressDates, Day, DayId, Position, Slot, Team, TeamSettings } from "@/lib/types";
 
 export const DAYS: Day[] = [
   { id: "jueves", label: "Jueves" },
@@ -90,9 +90,16 @@ export function whatsappUrl(dialCode: string, phone: string) {
 
 export const DEFAULT_TEAM_ID = "organizacion-interna";
 
+// Fechas por defecto del congreso ICEA 2026 (jueves, viernes y sabado).
+export const FECHAS_CONGRESO: CongressDates = {
+  jueves: "2026-08-13",
+  viernes: "2026-08-14",
+  sabado: "2026-08-15",
+};
+
 export const DEFAULT_TEAMS: Team[] = [
-  { id: "organizacion-interna", name: "Organización Interna", description: "Equipo de servidores y ujieres", active: true, createdAt: null, updatedAt: null },
-  { id: "tecnica", name: "Técnica", description: "Equipo técnico", active: true, createdAt: null, updatedAt: null },
+  { id: "organizacion-interna", name: "Organización Interna", description: "Equipo de servidores y ujieres", icon: "users", congressDates: FECHAS_CONGRESO, active: true, createdAt: null, updatedAt: null },
+  { id: "tecnica", name: "Técnica", description: "Equipo técnico", icon: "sliders", congressDates: FECHAS_CONGRESO, active: true, createdAt: null, updatedAt: null },
 ];
 
 export const DEFAULT_TEAM_SETTINGS: TeamSettings = {
@@ -109,4 +116,66 @@ export function slugifyTeamId(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "equipo";
+}
+
+// Fecha del dispositivo en formato YYYY-MM-DD (hora local).
+function fechaLocalIso(fecha: Date) {
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+}
+
+// Etiqueta corta "DD/MM" para el riel de dias.
+export function fechaCortaDia(dayId: DayId, congressDates: CongressDates = FECHAS_CONGRESO) {
+  const iso = congressDates[dayId] || FECHAS_CONGRESO[dayId];
+  if (!iso) return "";
+  const [, mes, dia] = iso.split("-");
+  return `${dia}/${mes}`;
+}
+
+// Dia del congreso en curso segun la fecha del dispositivo, o null fuera del evento.
+export function diaEnCurso(ahora: Date = new Date(), congressDates: CongressDates = FECHAS_CONGRESO): DayId | null {
+  const hoy = fechaLocalIso(ahora);
+  return (Object.keys(congressDates) as DayId[]).find((dayId) => (congressDates[dayId] || FECHAS_CONGRESO[dayId]) === hoy) ?? null;
+}
+
+// Id del slot que esta ocurriendo ahora mismo, o null si no hay ninguno en curso.
+export function slotEnCurso(slots: Slot[], ahora: Date = new Date(), congressDates: CongressDates = FECHAS_CONGRESO): string | null {
+  const dayId = diaEnCurso(ahora, congressDates);
+  if (!dayId) return null;
+  const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+  const slot = slots.find(
+    (item) =>
+      item.dayId === dayId &&
+      minutesFromTime(item.start) <= minutosAhora &&
+      minutosAhora < minutesFromTime(item.end),
+  );
+  return slot ? slot.id : null;
+}
+
+// Ids de iconos elegibles para un equipo (deben coincidir con el catalogo de team-icon.tsx).
+export const IDS_ICONOS_EQUIPO = [
+  "users",
+  "sliders",
+  "music",
+  "mic",
+  "video",
+  "camera",
+  "megaphone",
+  "door",
+  "serve",
+  "church",
+  "shield",
+  "book",
+  "kitchen",
+  "kids",
+  "sparkles",
+  "flame",
+] as const;
+
+export type IconoEquipoId = (typeof IDS_ICONOS_EQUIPO)[number];
+
+export function esIconoEquipo(value: unknown): value is IconoEquipoId {
+  return typeof value === "string" && (IDS_ICONOS_EQUIPO as readonly string[]).includes(value);
 }

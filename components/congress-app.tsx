@@ -3,9 +3,9 @@
 import type React from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Home, ImageIcon, Map as MapIcon, LogOut, RefreshCw, Search, Settings, X } from "lucide-react";
+import { Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { assignmentId, hoursBetween, minutesFromTime, normalizeSearch } from "@/lib/domain";
+import { assignmentId, fechaCortaDia, hoursBetween, minutesFromTime, normalizeSearch, slotEnCurso } from "@/lib/domain";
 import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -187,6 +187,32 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     }))
     .filter((group) => group.shifts.length > 0), [data.days, personalShifts]);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [ahora, setAhora] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // Se resuelve en el cliente para evitar desajustes de hidratacion.
+    setAhora(new Date());
+    const tick = window.setInterval(() => setAhora(new Date()), 60_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  const slotAhoraId = useMemo(() => (ahora ? slotEnCurso(data.slots, ahora, data.team.congressDates) : null), [ahora, data.slots, data.team.congressDates]);
+  const positionsById = useMemo(() => new Map(positions.map((position) => [position.id, position])), [positions]);
+
+  // Nombre visible de un puesto: el que cargo el equipo, o el numero si esta vacio.
+  const nombrePuesto = (positionId: number) => {
+    const custom = positionsById.get(positionId)?.name?.trim();
+    if (custom && custom.toLowerCase() !== `posicion ${positionId}`) return custom;
+    return `Puesto ${positionId}`;
+  };
+
+  const nombrePersona = personalShifts[0]?.assignment.serverName ?? "";
+  const inicialPersona = nombrePersona.trim().charAt(0).toUpperCase();
+  const labelDiaActivo = data.days.find((day) => day.id === activeDay)?.label ?? "";
+  const grupoDiaActivo = personalShiftsByDay.find((group) => group.day.id === activeDay) ?? null;
+  const otrosDias = personalShiftsByDay.filter((group) => group.day.id !== activeDay);
+
   useEffect(() => {
     if (window.sessionStorage.getItem(adminSessionKey) === "1") setAdminKey(ADMIN_KEY);
   }, [adminSessionKey]);
@@ -265,16 +291,29 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           <h1>Grilla de turnos</h1>
         </div>
         <div className="topbar-actions">
-          <ThemeToggle />
-          <Link className="ghost-button" href="/"><Home size={17} />Equipos</Link>
           <button className="ghost-button" onClick={() => setPlanOpen(true)}><MapIcon size={17} />Plano</button>
           <button className="ghost-button" onClick={refresh}><RefreshCw size={17} />Actualizar</button>
-          {isAdmin ? (
-            <>
-              <Link className="ghost-button" href={`/equipos/${teamId}/admin`}><Settings size={17} />Admin</Link>
-              <button className="primary-button" onClick={leaveAdmin}><LogOut size={17} />Salir admin</button>
-            </>
-          ) : <Link className="primary-button" href={`/equipos/${teamId}/admin`}><Settings size={17} />Admin</Link>}
+          <div className="menu-wrap">
+            <button className="ghost-button menu-trigger" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+              <MoreHorizontal size={18} />
+            </button>
+            {menuOpen ? (
+              <>
+                <button className="menu-backdrop" aria-hidden="true" tabIndex={-1} onClick={() => setMenuOpen(false)} />
+                <div className="menu-pop" role="menu">
+                  <Link className="menu-item" href="/" role="menuitem" onClick={() => setMenuOpen(false)}><Home size={16} />Inicio</Link>
+                  <div className="menu-item menu-item-theme">
+                    <span>Tema</span>
+                    <ThemeToggle />
+                  </div>
+                  <Link className="menu-item" href={`/equipos/${teamId}/admin`} role="menuitem" onClick={() => setMenuOpen(false)}><Settings size={16} />Admin</Link>
+                  {isAdmin ? (
+                    <button className="menu-item" role="menuitem" onClick={() => { setMenuOpen(false); leaveAdmin(); }}><LogOut size={16} />Salir admin</button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -287,59 +326,118 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
 
         {search ? (
           <section className="person-results">
-            <div className="section-heading"><h2>Turnos encontrados</h2><span>{personalShifts.length} coincidencias</span></div>
             {personalShifts.length ? (
-              <div className="results-by-day">
-                {personalShiftsByDay.map(({ day, shifts }) => (
-                  <section className="result-day-group" key={day.id}>
-                    <h3>{day.label}</h3>
-                    <article className="result-card result-list-card">
-                      <strong>{shifts[0]?.assignment.serverName}</strong>
-                      <ul>
-                        {shifts.map(({ assignment, slot }) => <li key={assignment.id}><span>{slot?.label}</span><small>Pos. {assignment.positionId}</small></li>)}
-                      </ul>
-                    </article>
-                  </section>
-                ))}
-              </div>
-            ) : <p className="empty-state">No hay turnos asignados para esa busqueda.</p>}
+              <>
+                {grupoDiaActivo ? (
+                  <article className="you-card">
+                    <span className="you-avatar" aria-hidden="true">{inicialPersona}</span>
+                    <div className="you-who">
+                      <strong>{nombrePersona}</strong>
+                      <span>Tu servicio · {labelDiaActivo} {fechaCortaDia(activeDay, data.team.congressDates)}</span>
+                    </div>
+                    <div className="you-shifts">
+                      {grupoDiaActivo.shifts.map(({ assignment, slot }) => {
+                        const esAhora = Boolean(slot && slot.id === slotAhoraId);
+                        return (
+                          <div className={esAhora ? "you-chip now" : "you-chip"} key={assignment.id}>
+                            <b>{slot?.label}</b>
+                            <small>{nombrePuesto(assignment.positionId)}{esAhora ? " · ahora" : ""}</small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </article>
+                ) : (
+                  <p className="empty-state">{nombrePersona} no tiene turnos el {labelDiaActivo}. Mirá los otros días abajo.</p>
+                )}
+                {otrosDias.length ? (
+                  <div className="results-by-day">
+                    <div className="section-heading"><h2>Otros días</h2><span>{personalShifts.length} turnos en total</span></div>
+                    {otrosDias.map(({ day, shifts }) => (
+                      <section className="result-day-group" key={day.id}>
+                        <h3>{day.label} {fechaCortaDia(day.id, data.team.congressDates)}</h3>
+                        <article className="result-card result-list-card">
+                          <strong>{shifts[0]?.assignment.serverName}</strong>
+                          <ul>
+                            {shifts.map(({ assignment, slot }) => <li key={assignment.id}><span>{slot?.label}</span><small>{nombrePuesto(assignment.positionId)}</small></li>)}
+                          </ul>
+                        </article>
+                      </section>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : <p className="empty-state">No hay turnos asignados para esa búsqueda.</p>}
           </section>
         ) : null}
 
-        <nav className="day-tabs" aria-label="Dias del congreso">{data.days.map((day) => <button key={day.id} className={activeDay === day.id ? "active" : ""} onClick={() => setActiveDay(day.id)}>{day.label}</button>)}</nav>
+        <nav className="day-tabs" aria-label="Días del congreso">
+          {data.days.map((day) => (
+            <button key={day.id} className={activeDay === day.id ? "active" : ""} onClick={() => setActiveDay(day.id)}>
+              <span className="day-name">{day.label}</span>
+              <small>{fechaCortaDia(day.id, data.team.congressDates)}</small>
+            </button>
+          ))}
+        </nav>
 
         <section className="schedule-wrap" aria-label="Grilla de turnos">
           <table className="schedule-grid">
-            <thead><tr><th className="position-head">POS.</th>{slots.map((slot) => <th key={slot.id}>{slot.label}</th>)}</tr></thead>
+            <thead>
+              <tr>
+                <th className="position-head">Puesto</th>
+                {slots.map((slot) => (
+                  <th key={slot.id} className={slot.id === slotAhoraId ? "time nowcol" : "time"}>
+                    {slot.start}
+                    <small>{slot.end}{slot.id === slotAhoraId ? " · ahora" : ""}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {positions.map((position) => (
-                <tr key={position.id}>
-                  <th className="position-cell"><span>{position.id}</span></th>
-                  {slots.map((slot) => {
-                    const id = assignmentId(activeDay, slot.id, position.id);
-                    const assignment = assignments.get(id);
-                    const assignedServer = assignment?.serverId ? servers.get(assignment.serverId) : undefined;
-                    const fit = availabilityFit(assignedServer, slot);
-                    const inactive = Boolean(assignment?.serverId && assignedServer && !assignedServer.active);
-                    const partial = data.settings.warnPartialAvailability && isPartial(fit);
-                    const consecutive = assignment?.serverId ? runLengthFor(assignment.serverId, slot, data.assignments, slotsById) >= data.settings.maxConsecutiveShifts : false;
-                    const options = optionsForCell(data, slot, id);
-                    const cellClass = [inactive ? "cell-danger" : "", partial ? "cell-warning" : "", consecutive ? "cell-consecutive" : ""].filter(Boolean).join(" ");
-                    return (
-                      <td className={cellClass} key={slot.id}>
-                        {isAdmin ? (
-                          <select value={assignment?.serverId ?? ""} disabled={savingId === id} onChange={(event) => saveAssignment(activeDay, slot.id, position.id, event.target.value || null)}>
-                            <option value="">Sin asignar</option>
-                            {assignment?.serverId && assignedServer && !options.some((option) => option.server.id === assignedServer.id) ? <option value={assignedServer.id}>{assignedServer.fullName}</option> : null}
-                            {options.map((option) => <option key={option.server.id} value={option.server.id}>{isPartial(option.fit) ? `${partialLabel(option.fit)} ${option.server.fullName}` : option.server.fullName}</option>)}
-                          </select>
-                        ) : <span className={assignment ? "" : "muted"}>{assignment?.serverName || "Sin asignar"}</span>}
-                        {assignment?.serverId && (inactive || partial || consecutive) ? <small className="cell-alert"><AlertTriangle size={13} />{inactive ? "Inactivo" : partial ? `Parcial ${partialLabel(fit)}` : "2 seguidos"}</small> : null}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {positions.map((position) => {
+                const custom = positionsById.get(position.id)?.name?.trim();
+                const tieneNombre = Boolean(custom && custom.toLowerCase() !== `posicion ${position.id}`);
+                return (
+                  <tr key={position.id}>
+                    <th className="position-cell">
+                      <span className="pos-num">{position.id}</span>
+                      {tieneNombre ? <span className="pos-name">{custom}</span> : null}
+                    </th>
+                    {slots.map((slot) => {
+                      const id = assignmentId(activeDay, slot.id, position.id);
+                      const assignment = assignments.get(id);
+                      const assignedServer = assignment?.serverId ? servers.get(assignment.serverId) : undefined;
+                      const fit = availabilityFit(assignedServer, slot);
+                      const inactive = Boolean(assignment?.serverId && assignedServer && !assignedServer.active);
+                      const partial = data.settings.warnPartialAvailability && isPartial(fit);
+                      const consecutive = assignment?.serverId ? runLengthFor(assignment.serverId, slot, data.assignments, slotsById) >= data.settings.maxConsecutiveShifts : false;
+                      const options = optionsForCell(data, slot, id);
+                      const esAhora = slot.id === slotAhoraId;
+                      const coincide = Boolean(search && assignment?.serverName && normalizeSearch(assignment.serverName).includes(search));
+                      const cellClass = [esAhora ? "nowcol" : "", inactive ? "cell-danger" : "", partial ? "cell-warning" : "", consecutive ? "cell-consecutive" : ""].filter(Boolean).join(" ");
+                      return (
+                        <td className={cellClass} key={slot.id}>
+                          {isAdmin ? (
+                            <select value={assignment?.serverId ?? ""} disabled={savingId === id} onChange={(event) => saveAssignment(activeDay, slot.id, position.id, event.target.value || null)}>
+                              <option value="">Sin asignar</option>
+                              {assignment?.serverId && assignedServer && !options.some((option) => option.server.id === assignedServer.id) ? <option value={assignedServer.id}>{assignedServer.fullName}</option> : null}
+                              {options.map((option) => <option key={option.server.id} value={option.server.id}>{isPartial(option.fit) ? `${partialLabel(option.fit)} ${option.server.fullName}` : option.server.fullName}</option>)}
+                            </select>
+                          ) : (
+                            <span className={`cell-name${assignment?.serverName ? "" : " muted"}${coincide ? " me" : ""}`}>{assignment?.serverName || "—"}</span>
+                          )}
+                          {assignment?.serverId && (inactive || partial || consecutive) ? (
+                            <small className="cell-alert">
+                              <span className={inactive ? "sdot d-danger" : "sdot d-warn"} aria-hidden="true" />
+                              {inactive ? "Inactivo" : partial ? `Parcial ${partialLabel(fit)}` : "2 seguidos"}
+                            </small>
+                          ) : null}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </section>

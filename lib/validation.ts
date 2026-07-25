@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { COUNTRIES, DAYS, assignmentId } from "@/lib/domain";
+import { COUNTRIES, DAYS, assignmentId, esIconoEquipo } from "@/lib/domain";
 import type { CountryCode, DayId } from "@/lib/types";
 
 const dayIds = new Set(DAYS.map((day) => day.id));
 const countryCodes = new Set(COUNTRIES.map((country) => country.code));
 const timeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Usa formato HH:MM");
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Usa formato YYYY-MM-DD");
 
 export const assignmentSchema = z
   .object({
@@ -57,10 +58,22 @@ const settingsSchema = z.object({
   preventSameSlotDuplicate: z.boolean(),
 });
 
+const congressDatesSchema = z.object({
+  jueves: dateSchema,
+  viernes: dateSchema,
+  sabado: dateSchema,
+});
+
 const teamSchema = z.object({
   id: z.string().max(80).optional(),
   name: z.string().min(1, "Nombre requerido").max(100),
   description: z.string().max(160).nullable().optional(),
+  icon: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => (value && esIconoEquipo(value) ? value : null)),
+  congressDates: congressDatesSchema.optional(),
   active: z.boolean().default(true),
 });
 

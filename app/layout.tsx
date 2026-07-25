@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Outfit } from "next/font/google";
+import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
+// Hanken Grotesk: cuerpo y controles (sans operativa).
+const hanken = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken", display: "swap" });
+// Fraunces: títulos y versículo (serif cálida, la "voz" editorial).
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   title: "ICEA Org Interna",
@@ -14,8 +16,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf6" },
-    { media: "(prefers-color-scheme: dark)", color: "#181a18" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f1e7" },
+    { media: "(prefers-color-scheme: dark)", color: "#10201c" },
   ],
 };
 
@@ -33,7 +35,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${figtree.variable} ${outfit.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${hanken.variable} ${fraunces.variable}`} suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}

@@ -1,10 +1,14 @@
 export type DayId = "jueves" | "viernes" | "sabado";
 export type CountryCode = "AR" | "UY" | "PY" | "CL" | "BR" | "BO";
 
+export type CongressDates = Record<DayId, string>;
+
 export type Team = {
   id: string;
   name: string;
   description: string | null;
+  icon: string | null;
+  congressDates: CongressDates;
   active: boolean;
   createdAt: string | null;
   updatedAt: string | null;

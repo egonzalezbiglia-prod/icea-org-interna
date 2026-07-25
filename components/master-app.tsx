@@ -5,7 +5,9 @@ import Link from "next/link";
 import { ArrowLeft, Lock, Plus } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import type { Team } from "@/lib/types";
+import { ICONOS_EQUIPO } from "@/components/team-icon";
+import { FECHAS_CONGRESO } from "@/lib/domain";
+import type { CongressDates, Team } from "@/lib/types";
 
 const MASTER_KEY = "Ezequiel#1993";
 const MASTER_SESSION_KEY = "icea-master-ok";
@@ -16,6 +18,43 @@ function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
     if (!response.ok) throw new Error(data.error ?? "Error inesperado");
     return data;
   });
+}
+
+// Selector visual de icono de equipo. Usa radios (uncontrolled) para integrarse con FormData.
+
+function readCongressDates(form: FormData): CongressDates {
+  return {
+    jueves: String(form.get("congressDateJueves") || FECHAS_CONGRESO.jueves),
+    viernes: String(form.get("congressDateViernes") || FECHAS_CONGRESO.viernes),
+    sabado: String(form.get("congressDateSabado") || FECHAS_CONGRESO.sabado),
+  };
+}
+
+function CongressDateFields({ dates = FECHAS_CONGRESO }: { dates?: CongressDates }) {
+  return (
+    <div className="event-date-fields" aria-label="Fechas del congreso">
+      <label><span>Jueves</span><input name="congressDateJueves" type="date" defaultValue={dates.jueves} /></label>
+      <label><span>Viernes</span><input name="congressDateViernes" type="date" defaultValue={dates.viernes} /></label>
+      <label><span>Sábado</span><input name="congressDateSabado" type="date" defaultValue={dates.sabado} /></label>
+    </div>
+  );
+}
+
+function IconPicker({ name, defaultValue }: { name: string; defaultValue?: string | null }) {
+  return (
+    <div className="icon-picker" role="radiogroup" aria-label="Ícono del equipo">
+      <label className="icon-option" title="Sin ícono (usa la inicial del nombre)">
+        <input type="radio" name={name} value="" defaultChecked={!defaultValue} />
+        <span className="icon-option-glyph">—</span>
+      </label>
+      {ICONOS_EQUIPO.map(({ id, label, Glyph }) => (
+        <label className="icon-option" key={id} title={label}>
+          <input type="radio" name={name} value={id} defaultChecked={defaultValue === id} />
+          <span className="icon-option-glyph"><Glyph size={18} /></span>
+        </label>
+      ))}
+    </div>
+  );
 }
 
 export function MasterApp({ initialTeams }: { initialTeams: Team[] }) {
@@ -49,6 +88,8 @@ export function MasterApp({ initialTeams }: { initialTeams: Team[] }) {
           id: team?.id,
           name: String(form.get("name") ?? ""),
           description: String(form.get("description") ?? ""),
+          icon: form.get("icon") ? String(form.get("icon")) : null,
+          congressDates: readCongressDates(form),
           active: form.get("active") === "on",
         },
       }),
@@ -74,9 +115,9 @@ export function MasterApp({ initialTeams }: { initialTeams: Team[] }) {
         {message ? <section className="edit-strip"><p>{message}</p></section> : null}
         <section className="admin-card master-card">
           <div className="admin-card-head"><div><h3>Equipos</h3><span>{teams.length} creados</span></div></div>
-          <form className="admin-new-form master-team-form" onSubmit={(event) => saveTeam(event)}><input name="name" placeholder="Nombre del equipo" /><input name="description" placeholder="Descripción breve" /><label className="active-toggle"><input name="active" type="checkbox" defaultChecked />Activo</label><button className="primary-button" type="submit"><Plus size={16} />Crear equipo</button></form>
+          <form className="admin-new-form master-team-form" onSubmit={(event) => saveTeam(event)}><input name="name" placeholder="Nombre del equipo" /><input name="description" placeholder="Descripción breve" /><label className="active-toggle"><input name="active" type="checkbox" defaultChecked />Activo</label><div className="icon-field"><span className="icon-field-label">Ícono</span><IconPicker name="icon" /></div><CongressDateFields /><button className="primary-button" type="submit"><Plus size={16} />Crear equipo</button></form>
           <div className="team-list-table">
-            {teams.map((team) => <form className="team-row" key={team.id} onSubmit={(event) => saveTeam(event, team)}><div className="team-row-fields"><strong>{team.id}</strong><input name="name" defaultValue={team.name} aria-label="Nombre del equipo" /><input name="description" defaultValue={team.description ?? ""} aria-label="Descripción del equipo" /><label className="active-toggle"><input name="active" type="checkbox" defaultChecked={team.active} />Activo</label></div><div className="row-actions"><Link className="ghost-button" href={'/equipos/' + team.id}>Grilla</Link><Link className="ghost-button" href={'/equipos/' + team.id + '/admin'}>Admin</Link><button className="primary-button" type="submit">Guardar</button></div></form>)}
+            {teams.map((team) => <form className="team-row" key={team.id} onSubmit={(event) => saveTeam(event, team)}><div className="team-row-fields"><strong>{team.id}</strong><input name="name" defaultValue={team.name} aria-label="Nombre del equipo" /><input name="description" defaultValue={team.description ?? ""} aria-label="Descripción del equipo" /><label className="active-toggle"><input name="active" type="checkbox" defaultChecked={team.active} />Activo</label><div className="icon-field"><span className="icon-field-label">Ícono</span><IconPicker name="icon" defaultValue={team.icon} /></div><CongressDateFields dates={team.congressDates} /></div><div className="row-actions"><Link className="ghost-button" href={'/equipos/' + team.id}>Grilla</Link><Link className="ghost-button" href={'/equipos/' + team.id + '/admin'}>Admin</Link><button className="primary-button" type="submit">Guardar</button></div></form>)}
           </div>
         </section>
       </main>

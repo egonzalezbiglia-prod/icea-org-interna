@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, Shield, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ChevronRight, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TeamIconGlyph } from "@/components/team-icon";
+import { esIconoEquipo } from "@/lib/domain";
 import { listTeams } from "@/lib/repositories";
 
 export const dynamic = "force-dynamic";
-
-function TeamIcon({ teamId }: { teamId: string }) {
-  if (teamId === "tecnica") return <SlidersHorizontal size={25} />;
-  return <UsersRound size={25} />;
-}
 
 export default async function HomePage() {
   const teams = (await listTeams()).filter((team) => team.active);
@@ -31,7 +28,9 @@ export default async function HomePage() {
           <div className="team-list">
             {teams.map((team) => (
               <Link className="team-row-card" href={`/equipos/${team.id}`} key={team.id}>
-                <span className="team-row-mono" aria-hidden="true"><TeamIcon teamId={team.id} /></span>
+                <span className="team-row-mono" aria-hidden="true">
+                  {esIconoEquipo(team.icon) ? <TeamIconGlyph icon={team.icon} size={25} /> : team.name.charAt(0).toUpperCase()}
+                </span>
                 <span className="team-row-body">
                   <strong>{team.name}</strong>
                   {team.description ? <span>{team.description}</span> : null}
@@ -40,6 +39,7 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
+          <p className="home-verse">&ldquo;Sirvan de buena voluntad, como quien sirve al Se&ntilde;or.&rdquo; &mdash; Efesios 6:7</p>
         </section>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from "firebase-admin/firestore";
-import { COUNTRIES, DAYS, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, POSITIONS, SLOTS, slugifyTeamId } from "@/lib/domain";
+import { COUNTRIES, DAYS, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, slugifyTeamId } from "@/lib/domain";
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
-import type { Assignment, AvailabilityRange, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
+import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
 
 function timestampToString(value: unknown) {
   if (value instanceof Timestamp) return value.toDate().toISOString();
@@ -9,8 +9,17 @@ function timestampToString(value: unknown) {
   return null;
 }
 
+function normalizeCongressDates(value: unknown): CongressDates {
+  const raw = typeof value === "object" && value ? value as Partial<CongressDates> : {};
+  return {
+    jueves: raw.jueves || FECHAS_CONGRESO.jueves,
+    viernes: raw.viernes || FECHAS_CONGRESO.viernes,
+    sabado: raw.sabado || FECHAS_CONGRESO.sabado,
+  };
+}
+
 function fallbackTeam(teamId: string): Team {
-  return DEFAULT_TEAMS.find((team) => team.id === teamId) ?? { id: teamId, name: teamId, description: null, active: true, createdAt: null, updatedAt: null };
+  return DEFAULT_TEAMS.find((team) => team.id === teamId) ?? { id: teamId, name: teamId, description: null, icon: null, congressDates: FECHAS_CONGRESO, active: true, createdAt: null, updatedAt: null };
 }
 
 function teamFromDoc(doc: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Team {
@@ -20,6 +29,9 @@ function teamFromDoc(doc: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot
     id: doc.id,
     name: data.name ?? doc.id,
     description: data.description ?? null,
+    // Si el doc todavia no tiene icono, cae al de los equipos por defecto (o null).
+    icon: data.icon ?? DEFAULT_TEAMS.find((team) => team.id === doc.id)?.icon ?? null,
+    congressDates: normalizeCongressDates(data.congressDates),
     active: data.active !== false,
     createdAt: timestampToString(data.createdAt),
     updatedAt: timestampToString(data.updatedAt),
@@ -129,7 +141,7 @@ export async function getTeam(teamId: string) {
   return doc.exists ? teamFromDoc(doc) : fallbackTeam(teamId);
 }
 
-export async function upsertTeam(input: { id?: string; name: string; description?: string | null; active?: boolean }) {
+export async function upsertTeam(input: { id?: string; name: string; description?: string | null; icon?: string | null; congressDates?: CongressDates; active?: boolean }) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
   const id = input.id ? slugifyTeamId(input.id) : slugifyTeamId(input.name);
   const ref = teamDoc(id);
@@ -137,6 +149,8 @@ export async function upsertTeam(input: { id?: string; name: string; description
   await ref.set({
     name: input.name.trim(),
     description: input.description?.trim() || null,
+    icon: input.icon ?? null,
+    congressDates: normalizeCongressDates(input.congressDates),
     active: input.active !== false,
     createdAt: existing.exists ? existing.data()?.createdAt : Timestamp.now(),
     updatedAt: Timestamp.now(),

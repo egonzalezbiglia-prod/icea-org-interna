@@ -11,6 +11,7 @@ Estructura principal:
 teams/{teamId}
   name
   description
+  icon
   active
   createdAt
   updatedAt
@@ -32,6 +33,8 @@ Campos:
 - `id`
 - `name`
 - `description`
+- `icon`: id de icono elegible desde Panel Master (catálogo en `lib/domain.ts` / `components/team-icon.tsx`). `null` = la home usa la inicial del nombre.
+- `congressDates`: fechas editables del congreso por día (`jueves`, `viernes`, `sabado`) en formato `YYYY-MM-DD`.
 - `active`
 - `createdAt`
 - `updatedAt`
@@ -127,3 +130,5 @@ Reglas iniciales:
 
 - 2026-07-25: se agrega modelo multi-equipo con `teams/{teamId}`.
 - 2026-07-25: Organización Interna mantiene fallback a colecciones root antiguas: `servers`, `slots`, `positions`, `assignments`, `settings/plan`.
+- 2026-07-25: se agrega el campo `icon` a `Team` (id del catálogo de íconos; `null` cae a la inicial). Docs antiguos sin el campo se leen como `null`, salvo los equipos por defecto que mantienen su ícono.
+- 2026-07-25: se agrega `congressDates` a `Team` para configurar desde Panel Master las fechas usadas por el riel de días y la franja "ahora".

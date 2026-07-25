@@ -93,6 +93,7 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 - Los equipos se presentan en lista vertical, no en grilla de tarjetas.
 - La acción de crear equipos no aparece en la home; vive solo en Panel Master.
 - Cada fila de equipo usa icono, nombre, descripción opcional y chevron.
+- Las filas de equipo deben mantenerse compactas para funcionar como selección rápida, no como tarjetas hero.
 
 
 ## Modo claro/oscuro

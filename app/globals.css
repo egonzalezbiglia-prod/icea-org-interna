@@ -1383,46 +1383,102 @@ h3 {
   padding: 1rem;
 }
 
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.8rem;
+.home-page .team-picker {
+  max-width: 560px;
+  margin: clamp(1.5rem, 6vh, 3.5rem) auto 0;
+  padding: clamp(1.4rem, 4vw, 2.25rem);
 }
 
-.team-card {
-  min-height: 126px;
-  display: grid;
-  align-content: center;
-  gap: 0.3rem;
+.picker-head {
+  max-width: 440px;
+  margin: 0 auto 1.6rem;
+  text-align: center;
+}
+
+.picker-head h2 {
+  margin-bottom: 0.4rem;
+  color: var(--accent-ink);
+  font-size: clamp(1.5rem, 3.5vw, 1.9rem);
+  line-height: 1.15;
+}
+
+.picker-sub {
+  margin-bottom: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.picker-count {
+  display: inline-block;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.team-row-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   color: var(--ink);
   text-decoration: none;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1rem 1.1rem;
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.team-card:hover {
+.team-row-card:hover {
   background: rgba(216, 240, 229, 0.72);
   border-color: rgba(21, 127, 133, 0.22);
+  border-left-color: var(--accent);
   box-shadow: 0 12px 28px rgba(30, 56, 54, 0.1);
   transform: translateY(-1px);
 }
 
-.team-card strong {
+.team-row-mono {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
   color: var(--accent-ink);
-  font-size: 1.1rem;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
-.team-card span,
+.team-row-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.team-row-body strong {
+  color: var(--accent-ink);
+  font-size: 1.05rem;
+}
+
+.team-row-body span,
 .team-row span,
 .team-row small {
   color: var(--ink-dim);
+  font-size: 0.9rem;
 }
 
-.add-team-card {
-  background: var(--accent-soft);
+.team-row-chevron {
+  flex-shrink: 0;
+  color: var(--ink-dim);
 }
 
 .master-team-form {

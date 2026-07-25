@@ -81,3 +81,14 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 - El menú no debe empujar el contenido ni ocupar un bloque grande dentro del flujo de la página.
 - El drawer debe tener backdrop para cerrar tocando fuera y botón de cierre interno.
 - Las filas editables de horarios en mobile deben compactar día, inicio y fin para evitar controles excesivamente anchos.
+
+
+## Home de selección de equipo
+
+Última actualización: 2026-07-25
+
+- La home inicial debe priorizar una selección simple y centrada de equipo.
+- El título principal vive dentro del bloque de selección, no en el topbar.
+- Los equipos se presentan en lista vertical, no en grilla de tarjetas.
+- La acción de crear equipos no aparece en la home; vive solo en Panel Master.
+- Cada fila de equipo usa monograma, nombre, descripción opcional y chevron.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Shield } from "lucide-react";
+import { ChevronRight, Shield } from "lucide-react";
 import { listTeams } from "@/lib/repositories";
 
 export const dynamic = "force-dynamic";
@@ -9,15 +9,29 @@ export default async function HomePage() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="topbar-title"><p className="eyebrow">ICEA 2026</p><h1>Equipos</h1></div>
-        <div className="topbar-actions"><Link className="ghost-button" href="/master"><Shield size={17} />Panel master</Link></div>
+        <p className="eyebrow">ICEA 2026</p>
+        <div className="topbar-actions">
+          <Link className="ghost-button" href="/master"><Shield size={17} />Panel master</Link>
+        </div>
       </header>
       <main className="page home-page">
         <section className="team-picker">
-          <div className="section-heading"><h2>Seleccioná un equipo</h2><span>{teams.length} disponibles</span></div>
-          <div className="team-grid">
-            {teams.map((team) => <Link className="team-card" href={'/equipos/' + team.id} key={team.id}><strong>{team.name}</strong>{team.description ? <span>{team.description}</span> : null}</Link>)}
-            <Link className="team-card add-team-card" href="/master"><Plus size={18} /><strong>Crear otro equipo</strong><span>Desde Panel Master</span></Link>
+          <div className="picker-head">
+            <h2>Seleccioná tu equipo</h2>
+            <p className="picker-sub">Entrá al espacio donde vas a servir hoy.</p>
+            <span className="picker-count">{teams.length} equipos disponibles</span>
+          </div>
+          <div className="team-list">
+            {teams.map((team) => (
+              <Link className="team-row-card" href={`/equipos/${team.id}`} key={team.id}>
+                <span className="team-row-mono" aria-hidden="true">{team.name.charAt(0)}</span>
+                <span className="team-row-body">
+                  <strong>{team.name}</strong>
+                  {team.description ? <span>{team.description}</span> : null}
+                </span>
+                <ChevronRight size={20} className="team-row-chevron" aria-hidden="true" />
+              </Link>
+            ))}
           </div>
         </section>
       </main>

@@ -54,6 +54,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 - Resultados de búsqueda se agrupan como agenda por día.
 - Se agregó selector de modo claro/oscuro con preferencia local por dispositivo.
 - Se implementó dark mode real en la grilla usando tokens `--grid-*` para celdas, encabezados y alertas.
+- Se corrigió el contraste del header, botones, buscador y tabs en dark mode para evitar bandas claras aisladas.
 - Se compactaron las filas de equipo en la home para reducir peso visual.
 
 ### Técnico

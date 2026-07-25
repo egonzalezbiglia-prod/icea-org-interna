@@ -13,3 +13,5 @@
 - [CODEX] Validé fechas configurables con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx` (`refresh` en useEffect y `<img>` del plano).
 - [CODEX] Implementé dark mode real para la grilla: reemplacé fondos claros hardcodeados por tokens `--grid-*` y documenté el criterio visual. Pendiente validar build/lint.
 - [CODEX] Validé dark mode real de grilla con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Ajusté contraste de dark mode en header, botones, buscador y tabs para que no quede una banda clara sobre la grilla oscura; pendiente validar build/lint.
+- [CODEX] Validé corrección visual de dark mode con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.

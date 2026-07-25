@@ -112,4 +112,5 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 - La grilla debe usar tokens semánticos (`--grid-*`) para encabezados, celdas, columna de puestos, alertas y franja "ahora".
 - En modo claro mantiene lectura tipo papel.
 - En modo oscuro no debe conservar fondos blancos hardcodeados: tabla, selectores, estados y resultados deben integrarse con la paleta oscura.
+- El dark mode incluye header, botones, buscador y tabs; no debe quedar una banda clara aislada sobre la grilla oscura.
 - Los estados de alerta deben seguir siendo distinguibles sin depender solo del color, usando texto/puntos/contraste.

@@ -185,8 +185,8 @@ h3 {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.4rem clamp(1rem, 4vw, 2.5rem);
-  border-bottom: 1px solid rgba(21, 127, 133, 0.18);
-  background: rgba(238, 243, 229, 0.9);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--ground) 90%, transparent);
   backdrop-filter: blur(16px);
 }
 
@@ -235,21 +235,21 @@ h3 {
 
 .ghost-button:hover,
 .primary-button:hover {
-  background: rgba(216, 240, 229, 0.82);
-  border-color: rgba(21, 127, 133, 0.24);
-  box-shadow: 0 10px 22px rgba(30, 56, 54, 0.1);
+  background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-ink) 10%, transparent);
   transform: translateY(-1px);
 }
 
 .primary-button {
   color: var(--warm-ink);
   background: var(--warm);
-  border-color: #c8eb5f;
+  border-color: color-mix(in srgb, var(--warm) 72%, #8aa11f);
 }
 
 .primary-button:hover {
   background: #e7ff8f;
-  border-color: #c8eb5f;
+  border-color: color-mix(in srgb, var(--warm) 72%, #8aa11f);
   box-shadow: 0 12px 24px rgba(200, 235, 95, 0.26);
 }
 
@@ -283,8 +283,8 @@ h3 {
 .search-field:hover,
 .select-field:hover {
   background: var(--surface-2);
-  border-color: rgba(21, 127, 133, 0.24);
-  box-shadow: 0 12px 28px rgba(30, 56, 54, 0.09);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-ink) 9%, transparent);
   transform: translateY(-1px);
 }
 
@@ -459,25 +459,25 @@ h3 {
 }
 
 .day-tabs button:hover {
-  background: rgba(216, 240, 229, 0.82);
-  border-color: rgba(21, 127, 133, 0.24);
-  box-shadow: 0 10px 22px rgba(30, 56, 54, 0.1);
+  background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-ink) 10%, transparent);
   transform: translateY(-1px);
 }
 
 /* Dia seleccionado = pino. La lima queda reservada para "ahora". */
 .day-tabs button.active {
-  color: #eaf3e4;
-  background: var(--accent-ink);
-  border-color: var(--accent-ink);
+  color: var(--warm-ink);
+  background: var(--warm);
+  border-color: var(--warm);
 }
 
 .day-tabs button.active small {
-  color: rgba(234, 243, 228, 0.72);
+  color: color-mix(in srgb, var(--warm-ink) 72%, transparent);
 }
 
 .day-tabs button.active:hover {
-  box-shadow: 0 12px 24px rgba(14, 63, 56, 0.24);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--warm) 22%, transparent);
 }
 
 .schedule-wrap {
@@ -755,7 +755,7 @@ h3 {
 .admin-sidebar button.active {
   color: var(--warm-ink);
   background: var(--warm);
-  border-color: #c8eb5f;
+  border-color: color-mix(in srgb, var(--warm) 72%, #8aa11f);
 }
 
 .admin-sidebar strong {
@@ -1332,9 +1332,9 @@ h3 {
 
 .icon-button:hover,
 .ghost-icon-button:hover {
-  background: rgba(216, 240, 229, 0.82);
-  border-color: rgba(21, 127, 133, 0.24);
-  box-shadow: 0 10px 22px rgba(30, 56, 54, 0.1);
+  background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-ink) 10%, transparent);
   transform: translateY(-1px);
 }
 
@@ -2141,4 +2141,49 @@ h3 {
 :root[data-theme="dark"] .schedule-grid select option {
   color: #1e2a26;
   background: #f2f1e8;
+}
+
+
+:root[data-theme="dark"] .topbar {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+:root[data-theme="dark"] .topbar h1,
+:root[data-theme="dark"] .eyebrow {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .ghost-button,
+:root[data-theme="dark"] .day-tabs button {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+:root[data-theme="dark"] .ghost-button:hover,
+:root[data-theme="dark"] .day-tabs button:hover {
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+:root[data-theme="dark"] .search-field,
+:root[data-theme="dark"] .select-field {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+:root[data-theme="dark"] .search-field:hover,
+:root[data-theme="dark"] .select-field:hover {
+  background: var(--surface-2);
+}
+
+:root[data-theme="dark"] .day-tabs button.active {
+  color: var(--warm-ink);
+  background: var(--warm);
+  border-color: var(--warm);
+}
+
+:root[data-theme="dark"] .day-tabs button.active small {
+  color: color-mix(in srgb, var(--warm-ink) 72%, transparent);
 }

@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Home, Lock, Menu, MessageCircle, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Home, Lock, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -76,6 +76,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("servers");
   const [message, setMessage] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
   const isAdmin = adminKey === ADMIN_KEY;
 
   function enterAdmin(event: React.FormEvent) {
@@ -122,7 +123,21 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
-          <div className="topbar-actions"><ThemeToggle /><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link></div>
+          <div className="topbar-actions">
+            <div className="menu-wrap">
+              <button className="ghost-button menu-trigger" type="button" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={navMenuOpen} onClick={() => setNavMenuOpen((open) => !open)}><MoreHorizontal size={18} /></button>
+              {navMenuOpen ? (
+                <>
+                  <button className="menu-backdrop" aria-hidden="true" tabIndex={-1} onClick={() => setNavMenuOpen(false)} />
+                  <div className="menu-pop" role="menu">
+                    <Link className="menu-item" href="/" role="menuitem" onClick={() => setNavMenuOpen(false)}><Home size={16} />Inicio</Link>
+                    <Link className="menu-item" href={`/equipos/${teamId}`} role="menuitem" onClick={() => setNavMenuOpen(false)}><ArrowLeft size={16} />Grilla</Link>
+                    <div className="menu-item menu-item-theme"><span>Tema</span><ThemeToggle /></div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
         </header>
         <main className="admin-page">
           <form className="admin-login-card" onSubmit={enterAdmin}>
@@ -142,7 +157,23 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-title"><p className="eyebrow">ICEA 2026 · {data.team.name.toUpperCase()}</p><h1>Admin</h1></div>
-        <div className="topbar-actions"><button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button><ThemeToggle /><Link className="ghost-button" href="/"><Home size={17} />Equipos</Link><Link className="ghost-button" href={`/equipos/${teamId}`}><ArrowLeft size={17} />Grilla</Link><button className="primary-button" onClick={leaveAdmin}>Salir admin</button></div>
+        <div className="topbar-actions">
+          <button className="admin-menu-toggle ghost-button" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen} aria-controls="admin-sections"><Menu size={17} />Menu</button>
+          <div className="menu-wrap">
+            <button className="ghost-button menu-trigger" type="button" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={navMenuOpen} onClick={() => setNavMenuOpen((open) => !open)}><MoreHorizontal size={18} /></button>
+            {navMenuOpen ? (
+              <>
+                <button className="menu-backdrop" aria-hidden="true" tabIndex={-1} onClick={() => setNavMenuOpen(false)} />
+                <div className="menu-pop" role="menu">
+                  <Link className="menu-item" href="/" role="menuitem" onClick={() => setNavMenuOpen(false)}><Home size={16} />Inicio</Link>
+                  <Link className="menu-item" href={`/equipos/${teamId}`} role="menuitem" onClick={() => setNavMenuOpen(false)}><ArrowLeft size={16} />Grilla</Link>
+                  <div className="menu-item menu-item-theme"><span>Tema</span><ThemeToggle /></div>
+                  <button className="menu-item" type="button" role="menuitem" onClick={() => { setNavMenuOpen(false); leaveAdmin(); }}><LogOut size={16} />Salir admin</button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
       </header>
       <main className="admin-page">
         <section className="admin-workspace">

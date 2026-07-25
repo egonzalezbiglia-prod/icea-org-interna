@@ -731,7 +731,7 @@ h3 {
   display: grid;
   gap: 0.45rem;
   padding: 0.55rem;
-  background: rgba(251, 255, 244, 0.86);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -763,7 +763,7 @@ h3 {
   min-height: 26px;
   display: inline-grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.52);
+  background: color-mix(in srgb, currentColor 15%, transparent);
   border-radius: 999px;
   font-size: 0.78rem;
 }
@@ -795,7 +795,7 @@ h3 {
   gap: 0.8rem;
   margin: 8vh auto 0;
   padding: 1.4rem;
-  background: rgba(251, 255, 244, 0.9);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -821,7 +821,7 @@ h3 {
 }
 
 .admin-card {
-  background: rgba(251, 255, 244, 0.86);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -860,7 +860,7 @@ h3 {
   display: grid;
   gap: 0.65rem;
   padding: 0.85rem 1rem;
-  background: rgba(216, 240, 229, 0.36);
+  background: var(--accent-soft);
   border-bottom: 1px solid var(--line);
 }
 
@@ -896,7 +896,7 @@ h3 {
 
 .admin-table-head {
   color: var(--ink-dim);
-  background: rgba(229, 241, 230, 0.72);
+  background: var(--grid-head);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1453,7 +1453,7 @@ h3 {
 
 .team-picker,
 .master-card {
-  background: rgba(251, 255, 244, 0.86);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -2186,4 +2186,77 @@ h3 {
 
 :root[data-theme="dark"] .day-tabs button.active small {
   color: color-mix(in srgb, var(--warm-ink) 72%, transparent);
+}
+
+/* ==========================================================================
+   Admin en modo oscuro: variantes de las pills de disponibilidad y estado
+   (las claras se mantienen para modo claro).
+   ========================================================================== */
+:root[data-theme="dark"] .availability-day.none {
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .availability-day.low {
+  color: #f0a594;
+  background: rgba(213, 92, 68, 0.2);
+  border-color: rgba(213, 92, 68, 0.34);
+}
+
+:root[data-theme="dark"] .availability-day.medium {
+  color: #f0c290;
+  background: rgba(191, 117, 23, 0.22);
+  border-color: rgba(191, 117, 23, 0.36);
+}
+
+:root[data-theme="dark"] .availability-day.good {
+  color: #e2e08c;
+  background: rgba(223, 255, 124, 0.16);
+  border-color: rgba(223, 255, 124, 0.3);
+}
+
+:root[data-theme="dark"] .availability-day.full {
+  color: #7fe0b0;
+  background: rgba(44, 191, 149, 0.18);
+  border-color: rgba(44, 191, 149, 0.32);
+}
+
+:root[data-theme="dark"] .status-check.active {
+  color: #7fe0b0;
+  background: rgba(44, 191, 149, 0.2);
+}
+
+:root[data-theme="dark"] .status-check.inactive {
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ==========================================================================
+   Admin: tabla de servidores con más aire y jerarquía (se siente "tablero")
+   ========================================================================== */
+.server-summary-row {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+  transition: background-color 140ms ease;
+}
+
+.server-summary-row:not(.inactive):hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.server-summary-row > strong {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.server-phone-cell {
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+}
+
+.admin-card-head h3 {
+  font-size: 1.35rem;
 }

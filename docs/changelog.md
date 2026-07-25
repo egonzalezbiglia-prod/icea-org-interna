@@ -11,6 +11,8 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 - Buscador con tarjeta "Tu servicio" del día activo, manteniendo la agenda de los demás días.
 - Header de la grilla con solo Plano y Actualizar visibles; Inicio, Tema y Admin pasan a un menú "⋯".
 - Home con versículo al pie y contador de equipos en lima.
+- Admin por equipo con modo oscuro real: superficies de panel, header de tabla y pills de disponibilidad/estado pasan a tokens theme-aware (antes tenían fondos claros hardcodeados que se veían lavados en oscuro).
+- Admin unificado con la grilla: header con menú "⋯" (Inicio · Grilla · Tema · Salir admin) en lugar de botones sueltos, y tabla de servidores con más aire y jerarquía (nombre prominente, teléfono secundario, hover de fila).
 
 ### Datos
 

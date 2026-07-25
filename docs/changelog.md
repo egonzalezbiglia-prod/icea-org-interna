@@ -23,6 +23,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 
 ### UX/UI
 
+- Se agregó botón Equipos/Home en grilla y admin para no depender del back del navegador.
 - Admin mobile tiene menú hamburguesa para secciones.
 - Admin mobile usa drawer lateral superpuesto para navegar secciones sin empujar contenido.
 - Horarios en mobile compacta día, inicio y fin para reducir ancho excesivo de controles.

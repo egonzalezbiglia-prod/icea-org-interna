@@ -13,6 +13,7 @@ Pasos:
 2. Ver lista de equipos activos.
 3. Seleccionar un equipo.
 4. Entrar a `/equipos/{teamId}`.
+5. Usar el botón Equipos para volver a la home sin depender del back del navegador.
 
 Resultado esperado:
 
@@ -43,7 +44,7 @@ Pasos:
 2. Ingresar clave admin.
 3. Usar menú: Servidores, Horarios, Posiciones o Reglas.
 4. Guardar cambios.
-5. Volver a la grilla.
+5. Volver a la grilla o a Equipos desde los botones del header.
 
 Resultado esperado:
 
@@ -67,6 +68,7 @@ Resultado esperado:
 ## Validación manual antes de deploy
 
 - [ ] Home lista equipos activos.
+- [ ] Cada grilla y admin permite volver a Equipos sin usar back del navegador.
 - [ ] Organización Interna abre en `/equipos/organizacion-interna`.
 - [ ] Técnica abre en `/equipos/tecnica`.
 - [ ] Admin por equipo guarda cambios aislados.

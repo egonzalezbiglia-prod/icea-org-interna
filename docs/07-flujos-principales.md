@@ -75,3 +75,14 @@ Resultado esperado:
 - [ ] Reglas por equipo afectan desplegables.
 - [ ] Panel Master crea un equipo nuevo.
 - [ ] Mobile admin abre secciones en drawer lateral sin empujar contenido.
+
+## Importar servidores
+
+Última actualización: 2026-07-26
+
+1. Entrar al admin del equipo.
+2. Abrir la sección Servidores.
+3. Opcionalmente, descargar el archivo Modelo para usar la estructura correcta.
+4. Presionar Importar.
+5. Seleccionar un archivo Excel o CSV con columnas: Nombre completo, celular, franja jueves, franja viernes, franja sábado.
+6. El sistema agrega solo servidores nuevos; no pisa ni edita los ya cargados.

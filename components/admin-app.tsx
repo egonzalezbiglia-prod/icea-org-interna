@@ -3,9 +3,9 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Home, Lock, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { COUNTRIES, cleanPhone, hoursBetween, whatsappUrl } from "@/lib/domain";
+import { COUNTRIES, cleanPhone, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -13,6 +13,127 @@ const ADMIN_SESSION_KEY = "icea-admin-ok";
 const NEW_SERVER_AVAILABILITY_TEMPLATE = "jueves 13:00-18:00\nviernes 08:00-13:00\nsabado 08:00-13:00";
 
 type AdminTab = "servers" | "slots" | "positions" | "rules";
+
+type ImportedServer = {
+  fullName: string;
+  whatsapp: string;
+  countryCode: CountryCode;
+  active: boolean;
+  availability: AvailabilityRange[];
+};
+
+type CellValue = string | number | boolean | null | undefined;
+
+function normalizeTimeToken(value: string) {
+  const clean = value.trim().replace(/\./g, ":");
+  if (/^\d{1,2}$/.test(clean)) return clean.padStart(2, "0") + ":00";
+  if (/^\d{3,4}$/.test(clean)) {
+    const padded = clean.padStart(4, "0");
+    return padded.slice(0, 2) + ":" + padded.slice(2);
+  }
+  const match = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return "";
+  return match[1].padStart(2, "0") + ":" + match[2];
+}
+
+function parseDayAvailability(value: CellValue, dayId: DayId): AvailabilityRange[] {
+  const text = String(value ?? "").toLowerCase();
+  const ranges: AvailabilityRange[] = [];
+  const matcher = /(\d{1,2}(?::|\.)?\d{0,2})\s*(?:-|–|—|a|al|hasta)\s*(\d{1,2}(?::|\.)?\d{0,2})/gi;
+  let match: RegExpExecArray | null;
+  while ((match = matcher.exec(text))) {
+    const start = normalizeTimeToken(match[1]);
+    const end = normalizeTimeToken(match[2]);
+    if (/^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end) && hoursBetween(start, end) > 0) {
+      ranges.push({ id: `${dayId}-${start.replace(":", "")}-${ranges.length}`, dayId, start, end });
+    }
+  }
+  return ranges;
+}
+
+function parseCsvRows(text: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell.trim());
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+function looksLikeImportHeader(row: CellValue[]) {
+  const first = normalizeSearch(String(row[0] ?? ""));
+  const second = normalizeSearch(String(row[1] ?? ""));
+  return first.includes("nombre") || second.includes("celular") || second.includes("telefono");
+}
+
+function rowsToServers(rows: CellValue[][]): ImportedServer[] {
+  const dataRows = rows.filter((row) => row.some((cell) => String(cell ?? "").trim())).slice(0, 501);
+  const withoutHeader = dataRows[0] && looksLikeImportHeader(dataRows[0]) ? dataRows.slice(1) : dataRows;
+  return withoutHeader
+    .map((row) => {
+      const fullName = String(row[0] ?? "").trim();
+      const whatsapp = cleanPhone(String(row[1] ?? ""));
+      const availability = [
+        ...parseDayAvailability(row[2], "jueves"),
+        ...parseDayAvailability(row[3], "viernes"),
+        ...parseDayAvailability(row[4], "sabado"),
+      ];
+      return { fullName, whatsapp, countryCode: "AR" as CountryCode, active: true, availability };
+    })
+    .filter((server) => server.fullName);
+}
+
+
+async function downloadServerImportTemplate() {
+  const XLSX = await import("xlsx");
+  const rows = [
+    ["Nombre completo", "celular", "franja jueves", "franja viernes", "franja sábado"],
+    ["Ejemplo Servidor", "1140815476", "13:00-18:00", "08:00-13:00 y 18:00-23:00", ""],
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  worksheet["!cols"] = [{ wch: 28 }, { wch: 16 }, { wch: 22 }, { wch: 34 }, { wch: 22 }];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Servidores");
+  XLSX.writeFile(workbook, "modelo-importar-servidores.xlsx");
+}
+
+async function readServerImportFile(file: File): Promise<ImportedServer[]> {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension === "xlsx" || extension === "xls") {
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : null;
+    if (!sheet) return [];
+    const rows = XLSX.utils.sheet_to_json<CellValue[]>(sheet, { header: 1, defval: "" });
+    return rowsToServers(rows);
+  }
+  return rowsToServers(parseCsvRows(await file.text()));
+}
 
 function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   return fetch(url, {
@@ -217,6 +338,27 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [creatingServer, setCreatingServer] = useState(false);
+  const [importingServers, setImportingServers] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
+
+
+  async function importServersFromFile(file: File) {
+    setImportingServers(true);
+    setImportMessage("");
+    try {
+      const servers = await readServerImportFile(file);
+      if (!servers.length) {
+        setImportMessage("No encontré servidores válidos para importar.");
+        return;
+      }
+      await onMutate({ type: "importServers", servers });
+      setImportMessage(`Importación enviada: ${servers.length} servidor${servers.length === 1 ? "" : "es"}. Los existentes se omiten por nombre o celular.`);
+    } catch (error) {
+      setImportMessage(error instanceof Error ? error.message : "No se pudo importar el archivo.");
+    } finally {
+      setImportingServers(false);
+    }
+  }
 
   async function saveServer(event: React.FormEvent<HTMLFormElement>, server?: Server) {
     event.preventDefault();
@@ -246,7 +388,8 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div>
+      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
+      {importMessage ? <p className="import-note">{importMessage}</p> : null}
 
       {editorOpen ? (
         <div className="modal-backdrop" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>

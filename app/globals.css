@@ -429,6 +429,7 @@ h3 {
   border-radius: 999px;
   padding: 0.18rem 0.55rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .day-tabs {
@@ -842,6 +843,37 @@ h3 {
 }
 
 
+
+.admin-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.admin-card-actions input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ghost-button.disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.import-note {
+  margin: 0 1rem 1rem;
+  color: var(--ink-dim);
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  font-weight: 700;
+}
+
 .admin-card-head {
   min-height: 64px;
   display: flex;
@@ -1211,6 +1243,26 @@ h3 {
   }
 }
 
+
+.cell-assignment {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cell-assignment .cell-name,
+.cell-assignment select {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cell-assignment .cell-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .schedule-grid td select {
   width: 100%;
   min-height: 40px;
@@ -1245,10 +1297,12 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.25rem;
+  flex: 0 0 auto;
+  margin-top: 0;
   color: #6c5f00;
   font-size: 0.72rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .cell-danger .cell-alert {

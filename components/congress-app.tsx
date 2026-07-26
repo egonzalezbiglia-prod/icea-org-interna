@@ -417,21 +417,23 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                       const cellClass = [esAhora ? "nowcol" : "", inactive ? "cell-danger" : "", partial ? "cell-warning" : "", consecutive ? "cell-consecutive" : ""].filter(Boolean).join(" ");
                       return (
                         <td className={cellClass} key={slot.id}>
-                          {isAdmin ? (
-                            <select value={assignment?.serverId ?? ""} disabled={savingId === id} onChange={(event) => saveAssignment(activeDay, slot.id, position.id, event.target.value || null)}>
-                              <option value="">Sin asignar</option>
-                              {assignment?.serverId && assignedServer && !options.some((option) => option.server.id === assignedServer.id) ? <option value={assignedServer.id}>{assignedServer.fullName}</option> : null}
-                              {options.map((option) => <option key={option.server.id} value={option.server.id}>{isPartial(option.fit) ? `${partialLabel(option.fit)} ${option.server.fullName}` : option.server.fullName}</option>)}
-                            </select>
-                          ) : (
-                            <span className={`cell-name${assignment?.serverName ? "" : " muted"}${coincide ? " me" : ""}`}>{assignment?.serverName || "—"}</span>
-                          )}
-                          {assignment?.serverId && (inactive || partial || consecutive) ? (
-                            <small className="cell-alert">
-                              <span className={inactive ? "sdot d-danger" : "sdot d-warn"} aria-hidden="true" />
-                              {inactive ? "Inactivo" : partial ? `Parcial ${partialLabel(fit)}` : "2 seguidos"}
-                            </small>
-                          ) : null}
+                          <div className="cell-assignment">
+                            {isAdmin ? (
+                              <select value={assignment?.serverId ?? ""} disabled={savingId === id} onChange={(event) => saveAssignment(activeDay, slot.id, position.id, event.target.value || null)}>
+                                <option value="">Sin asignar</option>
+                                {assignment?.serverId && assignedServer && !options.some((option) => option.server.id === assignedServer.id) ? <option value={assignedServer.id}>{assignedServer.fullName}</option> : null}
+                                {options.map((option) => <option key={option.server.id} value={option.server.id}>{isPartial(option.fit) ? `${partialLabel(option.fit)} ${option.server.fullName}` : option.server.fullName}</option>)}
+                              </select>
+                            ) : (
+                              <span className={`cell-name${assignment?.serverName ? "" : " muted"}${coincide ? " me" : ""}`}>{assignment?.serverName || "—"}</span>
+                            )}
+                            {assignment?.serverId && (inactive || partial || consecutive) ? (
+                              <small className="cell-alert">
+                                <span className={inactive ? "sdot d-danger" : "sdot d-warn"} aria-hidden="true" />
+                                {inactive ? "Inactivo" : partial ? `Parcial ${partialLabel(fit)}` : "2 seguidos"}
+                              </small>
+                            ) : null}
+                          </div>
                         </td>
                       );
                     })}

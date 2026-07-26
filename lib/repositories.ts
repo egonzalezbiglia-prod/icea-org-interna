@@ -1,5 +1,5 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from "firebase-admin/firestore";
-import { COUNTRIES, DAYS, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, slugifyTeamId } from "@/lib/domain";
+import { COUNTRIES, DAYS, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, cleanPhone, normalizeSearch, slugifyTeamId } from "@/lib/domain";
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
 import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
 
@@ -291,6 +291,45 @@ export async function upsertServer(teamId: string, input: { id?: string; fullNam
   const existing = await ref.get();
   await ref.set({ fullName: input.fullName.trim(), whatsapp: input.whatsapp.trim(), countryCode: input.countryCode, dialCode: country.dialCode, active: input.active, availability: input.availability, createdAt: existing.exists ? existing.data()?.createdAt : Timestamp.now(), updatedAt: Timestamp.now() }, { merge: true });
   return serverFromDoc(await ref.get());
+}
+
+
+export async function importServers(teamId: string, inputs: Array<{ fullName: string; whatsapp: string; countryCode: CountryCode; active: boolean; availability: AvailabilityRange[] }>) {
+  if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
+  const existing = await listServers(teamId);
+  const seen = new Set(existing.map((server) => cleanPhone(server.whatsapp) || normalizeSearch(server.fullName)));
+  const created: Server[] = [];
+  let batch = getDb().batch();
+  let pending = 0;
+
+  for (const input of inputs) {
+    const key = cleanPhone(input.whatsapp) || normalizeSearch(input.fullName);
+    if (!input.fullName.trim() || !key || seen.has(key)) continue;
+    seen.add(key);
+    const country = COUNTRIES.find((item) => item.code === input.countryCode) ?? COUNTRIES[0];
+    const ref = teamCollection(teamId, "servers").doc();
+    const serverData = {
+      fullName: input.fullName.trim(),
+      whatsapp: input.whatsapp.trim(),
+      countryCode: input.countryCode,
+      dialCode: country.dialCode,
+      active: input.active,
+      availability: input.availability,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+    batch.set(ref, serverData);
+    created.push({ id: ref.id, ...serverData, createdAt: null, updatedAt: null });
+    pending += 1;
+    if (pending === 450) {
+      await batch.commit();
+      batch = getDb().batch();
+      pending = 0;
+    }
+  }
+
+  if (pending) await batch.commit();
+  return created;
 }
 
 export async function deleteServer(teamId: string, serverId: string) {

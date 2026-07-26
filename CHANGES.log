@@ -18,3 +18,9 @@
 - [CODEX] Validé corrección visual de dark mode con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
 - [CLAUDE] Pasada estructural del admin (/equipos/{teamId}/admin): (A) el header pasa al patrón de la grilla, con menú "⋯" (Inicio · Grilla · Tema · Salir admin) en lugar de botones sueltos, tanto en el login como con sesión; se mantiene el toggle "Menu" de secciones en mobile. (B) tabla de servidores con más aire y jerarquía (fila más alta, nombre más prominente, teléfono como texto secundario, hover de fila) y título de sección más grande. Cambios en components/admin-app.tsx y app/globals.css (reusa clases .menu-* de la grilla). Pendiente verificar con pnpm build/dev.
 - [CODEX] Validé cambios de Claude en admin con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Ajusté celdas de grilla para mostrar nombre/select y alerta en la misma línea, evitando que en mobile solo se vea “2 seguidos”. Pendiente validar build/lint.
+- [CODEX] Validé ajuste de alerta inline en celdas con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Implementé importación de servidores desde Excel/CSV en admin: formato Nombre completo/celular/franjas por día, agrega nuevos y omite existentes por nombre o celular. Pendiente validar build/lint.
+- [CODEX] Validé importación Excel/CSV de servidores con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Agregué botón Modelo en Servidores para descargar un Excel base (`modelo-importar-servidores.xlsx`) con columnas esperadas y ejemplo. Pendiente validar build/lint.
+- [CODEX] Validé descarga de modelo Excel de servidores con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.

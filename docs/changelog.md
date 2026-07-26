@@ -6,6 +6,9 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 
 ### UX/UI
 
+- Se agregó descarga de modelo Excel para importación de servidores.
+- Se agregó importación de servidores desde Excel/CSV en el admin, agregando nuevos registros sin pisar existentes.
+- Se alineó la alerta de celda junto al nombre/select para que en mobile no tape el servidor asignado.
 - Nueva dirección visual: serif (Fraunces) para títulos y versículo, sans (Hanken Grotesk) para el cuerpo, y paleta pino/esmeralda/lima sobre papel cálido, en modo claro y oscuro.
 - Grilla rediseñada como "tablero de servicio": horarios en columnas tabulares, franja del turno en curso ("ahora") resaltada en lima, puestos con nombre opcional o número, y alertas como puntos de color.
 - Buscador con tarjeta "Tu servicio" del día activo, manteniendo la agenda de los demás días.
@@ -21,6 +24,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 
 ### Técnico
 
+- Nueva dependencia `xlsx` para leer planillas Excel desde el navegador.
 - ESLint ahora ignora salidas generadas (`.next`, `out`, `dist`) y `next-env.d.ts` para que `pnpm lint` revise solo código fuente.
 - Fuentes vía `next/font`: Fraunces + Hanken Grotesk (reemplazan Outfit + Figtree).
 - `lib/domain.ts`: fechas por defecto del congreso (13/14/15-08-2026) y helpers `fechaCortaDia`/`slotEnCurso` ahora aceptan fechas configurables por equipo.

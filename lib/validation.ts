@@ -92,6 +92,7 @@ export const configSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("upsertPosition"), position: positionSchema, editKey: z.string().optional() }),
   z.object({ type: z.literal("deletePosition"), positionId: z.number().int().positive(), editKey: z.string().optional() }),
   z.object({ type: z.literal("upsertServer"), server: serverSchema, editKey: z.string().optional() }),
+  z.object({ type: z.literal("importServers"), servers: z.array(serverSchema.omit({ id: true })).min(1).max(500), editKey: z.string().optional() }),
   z.object({ type: z.literal("deleteServer"), serverId: z.string().min(1), editKey: z.string().optional() }),
   z.object({ type: z.literal("updateSettings"), settings: settingsSchema, editKey: z.string().optional() }),
 ]);

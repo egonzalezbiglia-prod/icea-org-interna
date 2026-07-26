@@ -114,3 +114,14 @@ Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe
 - En modo oscuro no debe conservar fondos blancos hardcodeados: tabla, selectores, estados y resultados deben integrarse con la paleta oscura.
 - El dark mode incluye header, botones, buscador y tabs; no debe quedar una banda clara aislada sobre la grilla oscura.
 - Los estados de alerta deben seguir siendo distinguibles sin depender solo del color, usando texto/puntos/contraste.
+
+## Importación de servidores
+
+Última actualización: 2026-07-26
+
+- El admin de Servidores permite importar archivos `.xlsx`, `.xls` o `.csv`.
+- La sección Servidores ofrece un botón `Modelo` para descargar `modelo-importar-servidores.xlsx` con columnas y ejemplo de carga.
+- El formato esperado es: `Nombre completo`, `celular`, `franja jueves`, `franja viernes`, `franja sábado`.
+- La importación agrega servidores nuevos y no modifica registros existentes.
+- Si ya existe un servidor por celular o por nombre normalizado, se omite para evitar duplicados accidentales.
+- Las franjas pueden escribirse como `08:00-13:00`, `08 a 13` o múltiples rangos en la misma celda, por ejemplo `08 a 12 y 18 a 23`.

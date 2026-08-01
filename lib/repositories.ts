@@ -234,8 +234,16 @@ export async function upsertAssignment(teamId: string, input: { id: string; dayI
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
   const ref = teamCollection(teamId, "assignments").doc(input.id);
   if (!input.serverId) {
-    await ref.delete();
-    return null;
+    await ref.set({
+      dayId: input.dayId,
+      slotId: input.slotId,
+      positionId: input.positionId,
+      serverId: null,
+      serverName: null,
+      updatedAt: Timestamp.now(),
+      updatedBy: input.actor,
+    }, { merge: true });
+    return assignmentFromDoc(await ref.get());
   }
   const server = await teamCollection(teamId, "servers").doc(input.serverId).get();
   const serverData = server.exists ? serverFromDoc(server) : null;

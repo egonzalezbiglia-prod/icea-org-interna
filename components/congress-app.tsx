@@ -251,7 +251,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       });
       setData((current) => {
         const next = current.assignments.filter((assignment) => assignment.id !== id);
-        if (result.assignment) next.push(result.assignment);
+        if (result.assignment?.serverId) next.push(result.assignment);
         return { ...current, assignments: next };
       });
       setMessage("Cambio guardado.");

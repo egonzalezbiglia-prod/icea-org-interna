@@ -24,3 +24,5 @@
 - [CODEX] Validé importación Excel/CSV de servidores con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
 - [CODEX] Agregué botón Modelo en Servidores para descargar un Excel base (`modelo-importar-servidores.xlsx`) con columnas esperadas y ejemplo. Pendiente validar build/lint.
 - [CODEX] Validé descarga de modelo Excel de servidores con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Corregí desasignación de turnos: ahora guarda una asignación vacía con `serverId: null` para bloquear el fallback histórico y evitar que reaparezca al actualizar. Pendiente validar build/lint.
+- [CODEX] Validé corrección de desasignación con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.

@@ -132,3 +132,4 @@ Reglas iniciales:
 - 2026-07-25: Organización Interna mantiene fallback a colecciones root antiguas: `servers`, `slots`, `positions`, `assignments`, `settings/plan`.
 - 2026-07-25: se agrega el campo `icon` a `Team` (id del catálogo de íconos; `null` cae a la inicial). Docs antiguos sin el campo se leen como `null`, salvo los equipos por defecto que mantienen su ícono.
 - 2026-07-25: se agrega `congressDates` a `Team` para configurar desde Panel Master las fechas usadas por el riel de días y la franja "ahora".
+- 2026-07-26: al desasignar un turno se conserva un documento de asignación con `serverId: null` para tapar datos históricos leídos por fallback desde colecciones root.

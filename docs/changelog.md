@@ -19,6 +19,7 @@ Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada
 
 ### Datos
 
+- Se corrigió la desasignación de turnos para que no reaparezcan asignaciones históricas al actualizar.
 - Se agrega el campo `icon` a `Team`, elegible desde un selector visual en Panel Master (fallback: inicial del nombre).
 - Se agrega el campo `congressDates` a `Team` para editar fechas del congreso desde Panel Master.
 

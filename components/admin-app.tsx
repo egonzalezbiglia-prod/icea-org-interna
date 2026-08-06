@@ -10,7 +10,7 @@ import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, Sched
 
 const ADMIN_KEY = "1icea2026";
 const ADMIN_SESSION_KEY = "icea-admin-ok";
-const NEW_SERVER_AVAILABILITY_TEMPLATE = "jueves 13:00-18:00\nviernes 08:00-13:00\nsabado 08:00-13:00";
+const NEW_SERVER_AVAILABILITY_TEMPLATE = "jueves 13:00-22:00\nviernes 08:00-23:00\nsabado 08:00-23:00";
 
 type AdminTab = "servers" | "slots" | "positions" | "rules";
 

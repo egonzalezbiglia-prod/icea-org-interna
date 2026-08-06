@@ -653,28 +653,31 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => setCoverageOpen((open) => !open)}><BarChart3 size={16} />Reporte</button><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
+      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => setCoverageOpen(true)}><BarChart3 size={16} />Reporte</button><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
       {importMessage ? <p className="import-note">{importMessage}</p> : null}
 
       {coverageOpen ? (
-        <section className="coverage-report" aria-label="Reporte de cobertura por turno">
-          <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div></div></div>
-          {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
-          <div className="admin-table coverage-table">
-            <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full</span><span>Llegan después</span><span>Se van antes</span><span>Estado</span></div>
-            {coverage.map((row) => (
-              <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
-                <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
-                <span>Turno {row.turn}</span>
-                <span>{row.slot.start} - {row.slot.end}</span>
-                <strong>{row.full}</strong>
-                <span>{row.arrivesAfter}</span>
-                <span>{row.leavesBefore}</span>
-                <span className={"coverage-status " + row.status.tone}>{row.status.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="modal-backdrop" onClick={() => setCoverageOpen(false)}>
+          <section className="coverage-report coverage-report-modal" aria-label="Reporte de cobertura por turno" onClick={(event) => event.stopPropagation()}>
+            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
+            <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
+            {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
+            <div className="admin-table coverage-table">
+              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full</span><span>Llegan después</span><span>Se van antes</span><span>Estado</span></div>
+              {coverage.map((row) => (
+                <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
+                  <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
+                  <span>Turno {row.turn}</span>
+                  <span>{row.slot.start} - {row.slot.end}</span>
+                  <strong>{row.full}</strong>
+                  <span>{row.arrivesAfter}</span>
+                  <span>{row.leavesBefore}</span>
+                  <span className={"coverage-status " + row.status.tone}>{row.status.label}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
       ) : null}
 
       {editorOpen ? (

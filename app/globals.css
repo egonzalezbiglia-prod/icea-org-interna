@@ -979,6 +979,16 @@ h3 {
   border-bottom: 1px solid var(--line);
 }
 
+.coverage-report-modal {
+  width: min(1080px, 100%);
+  max-height: min(760px, 92vh);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
 .coverage-report-head {
   display: flex;
   align-items: flex-start;

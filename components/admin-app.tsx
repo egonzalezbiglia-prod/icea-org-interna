@@ -510,30 +510,42 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
 
   [COVERAGE_IDEAL_TARGET, COVERAGE_MINIMUM_TARGET].forEach((targetFull) => {
     const simulation = simulatedNetFullBySlot(data, targetFull);
-    const assignedCountByServer = new Map<string, number>();
-    simulation.assignmentsBySlot.forEach((servers) => {
-      servers.forEach((server) => assignedCountByServer.set(server.id, (assignedCountByServer.get(server.id) ?? 0) + 1));
+    const assignedCountByServerDay = new Map<string, number>();
+    simulation.assignmentsBySlot.forEach((servers, slotId) => {
+      const slot = data.slots.find((item) => item.id === slotId);
+      if (!slot) return;
+      servers.forEach((server) => {
+        const key = `${server.id}:${slot.dayId}`;
+        assignedCountByServerDay.set(key, (assignedCountByServerDay.get(key) ?? 0) + 1);
+      });
     });
     const rows = [
-      ["Día", "Turno", "Horario", "Orden", "Servidor", "WhatsApp", "Disponibilidad total", "Turnos simulados"],
+      ["Día", "Turno", "Horario", "Orden", "Servidor", "WhatsApp", "Disponibilidad del día", "Turnos completos totales", "Turnos asignados", "% cobertura persona"],
       ...data.days.flatMap((day) => data.slots
         .filter((slot) => slot.dayId === day.id)
         .flatMap((slot, slotIndex) => {
           const assigned = simulation.assignmentsBySlot.get(slot.id) ?? [];
-          return assigned.map((server, serverIndex) => [
-            etiquetaDia(day.id, day.label),
-            `Turno ${slotIndex + 1}`,
-            `${slot.start} - ${slot.end}`,
-            serverIndex + 1,
-            server.fullName,
-            server.whatsapp,
-            availabilityToText(server.availability),
-            assignedCountByServer.get(server.id) ?? 0,
-          ]);
+          return assigned.map((server, serverIndex) => {
+            const completeTurns = data.slots.filter((daySlot) => daySlot.dayId === day.id && isFullAvailable(server, daySlot)).length;
+            const assignedTurns = assignedCountByServerDay.get(`${server.id}:${day.id}`) ?? 0;
+            const coveragePercent = Math.round((assignedTurns / Math.max(1, completeTurns)) * 100);
+            return [
+              etiquetaDia(day.id, day.label),
+              `Turno ${slotIndex + 1}`,
+              `${slot.start} - ${slot.end}`,
+              serverIndex + 1,
+              server.fullName,
+              server.whatsapp,
+              availabilityToText(server.availability.filter((range) => range.dayId === day.id)),
+              completeTurns,
+              assignedTurns,
+              `${coveragePercent}%`,
+            ];
+          });
         })),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    worksheet["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 30 }, { wch: 18 }, { wch: 42 }, { wch: 16 }];
+    worksheet["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 30 }, { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(workbook, worksheet, `Objetivo ${targetFull}`);
   });
 

@@ -342,10 +342,15 @@ export async function importServers(teamId: string, inputs: Array<{ fullName: st
 
 export async function deleteServer(teamId: string, serverId: string) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
-  const assignments = await teamCollection(teamId, "assignments").where("serverId", "==", serverId).get();
+  const [assignments, rootAssignments] = await Promise.all([
+    teamCollection(teamId, "assignments").where("serverId", "==", serverId).get(),
+    teamId === DEFAULT_TEAM_ID ? getDb().collection("assignments").where("serverId", "==", serverId).get() : Promise.resolve(null),
+  ]);
   const batch = getDb().batch();
   assignments.docs.forEach((doc) => batch.delete(doc.ref));
+  rootAssignments?.docs.forEach((doc) => batch.delete(doc.ref));
   batch.delete(teamCollection(teamId, "servers").doc(serverId));
+  if (teamId === DEFAULT_TEAM_ID) batch.delete(getDb().collection("servers").doc(serverId));
   await batch.commit();
 }
 

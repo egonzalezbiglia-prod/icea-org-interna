@@ -136,9 +136,9 @@ function firmaTurnos(slots: Slot[]) {
 }
 
 async function copiarHorariosPng(data: SchedulePayload) {
-  const ancho = 1600;
-  const margen = 80;
-  const espacio = 28;
+  const ancho = 1100;
+  const margen = 56;
+  const espacio = 24;
   const turnosPorDia = data.days.map((day) => ({
     day,
     slots: data.slots.filter((slot) => slot.dayId === day.id),
@@ -155,8 +155,8 @@ async function copiarHorariosPng(data: SchedulePayload) {
   }, []);
   const anchoColumna = (ancho - margen * 2 - espacio * (gruposDeTurnos.length - 1)) / gruposDeTurnos.length;
   const maximoTurnos = Math.max(1, ...gruposDeTurnos.map((group) => group.slots.length));
-  const altoTarjeta = 112;
-  const alto = Math.max(860, 528 + maximoTurnos * (altoTarjeta + 22));
+  const altoTarjeta = 100;
+  const alto = Math.max(820, 440 + maximoTurnos * (altoTarjeta + 18));
   const canvas = document.createElement("canvas");
   canvas.width = ancho;
   canvas.height = alto;
@@ -169,33 +169,33 @@ async function copiarHorariosPng(data: SchedulePayload) {
   fondo.addColorStop(0, "#123328");
   fondo.addColorStop(1, "#214f3e");
   ctx.fillStyle = fondo;
-  redondearRect(ctx, 38, 38, ancho - 76, alto - 76, 36);
+  redondearRect(ctx, 26, 26, ancho - 52, alto - 52, 30);
   ctx.fill();
 
   ctx.fillStyle = "#f6f3e8";
-  ctx.font = "800 54px Georgia, serif";
-  ctx.fillText("Distribución de turnos", margen, 128);
+  ctx.font = "800 44px Georgia, serif";
+  ctx.fillText("Distribución de turnos", margen, 96);
   ctx.fillStyle = "rgba(246, 243, 232, 0.76)";
-  ctx.font = "700 20px Arial, sans-serif";
-  ctx.fillText(data.team.name.toUpperCase(), margen, 168);
-  ctx.font = "500 22px Arial, sans-serif";
-  ctx.fillText("Días, turnos y rangos horarios para organizar el servicio.", margen, 212);
+  ctx.font = "700 17px Arial, sans-serif";
+  ctx.fillText(data.team.name.toUpperCase(), margen, 132);
+  ctx.font = "500 18px Arial, sans-serif";
+  ctx.fillText("Días, turnos y rangos horarios para organizar el servicio.", margen, 166);
 
   gruposDeTurnos.forEach(({ days, slots }, dayIndex) => {
     const x = margen + dayIndex * (anchoColumna + espacio);
-    const y = 260;
-    redondearRect(ctx, x, y, anchoColumna, 96, 24);
+    const y = 218;
+    redondearRect(ctx, x, y, anchoColumna, 82, 20);
     ctx.fillStyle = "#d8ff6a";
     ctx.fill();
     ctx.fillStyle = "#10241d";
-    ctx.font = "900 34px Arial, sans-serif";
-    ctx.fillText(days.map((day) => etiquetaDia(day.id, day.label)).join(" y "), x + 28, y + 44);
-    ctx.font = "800 20px Arial, sans-serif";
-    ctx.fillText(days.map((day) => fechaCortaDia(day.id, data.team.congressDates)).join(" y "), x + 30, y + 74);
+    ctx.font = "900 29px Arial, sans-serif";
+    ctx.fillText(days.map((day) => etiquetaDia(day.id, day.label)).join(" y "), x + 22, y + 38);
+    ctx.font = "800 17px Arial, sans-serif";
+    ctx.fillText(days.map((day) => fechaCortaDia(day.id, data.team.congressDates)).join(" y "), x + 24, y + 64);
 
     slots.forEach((slot, slotIndex) => {
-      const cardY = y + 128 + slotIndex * (altoTarjeta + 22);
-      redondearRect(ctx, x, cardY, anchoColumna, altoTarjeta, 22);
+      const cardY = y + 108 + slotIndex * (altoTarjeta + 18);
+      redondearRect(ctx, x, cardY, anchoColumna, altoTarjeta, 18);
       ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
       ctx.fill();
       ctx.strokeStyle = "rgba(16, 36, 29, 0.12)";
@@ -203,26 +203,26 @@ async function copiarHorariosPng(data: SchedulePayload) {
       ctx.stroke();
 
       ctx.fillStyle = "#1f7a58";
-      ctx.font = "900 24px Arial, sans-serif";
-      ctx.fillText(`Turno ${slotIndex + 1}`, x + 28, cardY + 42);
+      ctx.font = "900 21px Arial, sans-serif";
+      ctx.fillText(`Turno ${slotIndex + 1}`, x + 22, cardY + 36);
       ctx.fillStyle = "#10241d";
-      ctx.font = "900 38px Arial, sans-serif";
-      ctx.fillText(`${slot.start} - ${slot.end}`, x + 28, cardY + 88);
+      ctx.font = "900 32px Arial, sans-serif";
+      ctx.fillText(`${slot.start} - ${slot.end}`, x + 22, cardY + 78);
     });
 
     if (!slots.length) {
-      redondearRect(ctx, x, y + 128, anchoColumna, altoTarjeta, 22);
+      redondearRect(ctx, x, y + 108, anchoColumna, altoTarjeta, 18);
       ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
       ctx.fill();
       ctx.fillStyle = "#476158";
-      ctx.font = "700 24px Arial, sans-serif";
-      ctx.fillText("Sin turnos cargados", x + 28, y + 192);
+      ctx.font = "700 21px Arial, sans-serif";
+      ctx.fillText("Sin turnos cargados", x + 22, y + 166);
     }
   });
 
   ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
-  ctx.font = "700 24px Arial, sans-serif";
-  ctx.fillText("ICEA 2026", margen, alto - 86);
+  ctx.font = "700 22px Arial, sans-serif";
+  ctx.fillText("ICEA 2026", margen, alto - 64);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");

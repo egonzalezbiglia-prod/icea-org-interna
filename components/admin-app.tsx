@@ -442,10 +442,10 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function coverageStatus(full: number, minimum = COVERAGE_MINIMUM_TARGET) {
-  if (full >= minimum) return { label: "Ok", tone: "ok" };
-  if (full >= minimum - 2) return { label: "Leve", tone: "mild" };
-  if (full >= minimum - 6) return { label: "Grave", tone: "serious" };
+function coverageStatus(full: number) {
+  if (full >= 36) return { label: "Ok", tone: "ok" };
+  if (full >= 30) return { label: "Leve", tone: "mild" };
+  if (full >= 26) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 

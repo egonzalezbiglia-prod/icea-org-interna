@@ -285,10 +285,15 @@ export async function upsertPosition(teamId: string, input: { id?: number; name:
 
 export async function deletePosition(teamId: string, positionId: number) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
-  const assignments = await teamCollection(teamId, "assignments").where("positionId", "==", positionId).get();
+  const [assignments, rootAssignments] = await Promise.all([
+    teamCollection(teamId, "assignments").where("positionId", "==", positionId).get(),
+    teamId === DEFAULT_TEAM_ID ? getDb().collection("assignments").where("positionId", "==", positionId).get() : Promise.resolve(null),
+  ]);
   const batch = getDb().batch();
   assignments.docs.forEach((doc) => batch.delete(doc.ref));
+  rootAssignments?.docs.forEach((doc) => batch.delete(doc.ref));
   batch.delete(teamCollection(teamId, "positions").doc(String(positionId)));
+  if (teamId === DEFAULT_TEAM_ID) batch.delete(getDb().collection("positions").doc(String(positionId)));
   await batch.commit();
 }
 

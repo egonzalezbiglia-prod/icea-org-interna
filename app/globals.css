@@ -527,20 +527,23 @@ h3 {
 
 .position-head {
   z-index: 8 !important;
-  width: 132px;
-  min-width: 132px;
+  width: var(--position-column-width, 132px);
+  min-width: var(--position-column-width, 132px);
   max-width: 132px;
   text-align: left;
+  white-space: nowrap;
 }
 
 .position-cell {
   z-index: 4;
-  width: 132px;
-  min-width: 132px;
+  width: var(--position-column-width, 132px);
+  min-width: var(--position-column-width, 132px);
   max-width: 132px;
   padding: 0.5rem 0.7rem;
   background: var(--grid-position);
   text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .position-cell .pos-num {
@@ -555,6 +558,8 @@ h3 {
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .schedule-grid td {

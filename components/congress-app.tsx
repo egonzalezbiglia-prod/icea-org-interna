@@ -199,6 +199,15 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
 
   const slotAhoraId = useMemo(() => (ahora ? slotEnCurso(data.slots, ahora, data.team.congressDates) : null), [ahora, data.slots, data.team.congressDates]);
   const positionsById = useMemo(() => new Map(positions.map((position) => [position.id, position])), [positions]);
+  const anchoColumnaPosicion = useMemo(() => {
+    const caracteres = positions.reduce((maximo, position) => {
+      const custom = position.name?.trim();
+      const etiqueta = custom && custom.toLowerCase() !== `posicion ${position.id}` ? custom : String(position.id);
+      return Math.max(maximo, etiqueta.length, String(position.id).length, 3);
+    }, 3);
+    return Math.min(132, Math.max(58, Math.ceil(caracteres * 7.3 + 28)));
+  }, [positions]);
+  const estiloGrilla = { "--position-column-width": `${anchoColumnaPosicion}px` } as React.CSSProperties & Record<"--position-column-width", string>;
 
   // Nombre visible de un puesto: el que cargo el equipo, o el numero si esta vacio.
   const nombrePuesto = (positionId: number) => {
@@ -380,11 +389,11 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           ))}
         </nav>
 
-        <section className="schedule-wrap" aria-label="Grilla de turnos">
+        <section className="schedule-wrap" style={estiloGrilla} aria-label="Grilla de turnos">
           <table className="schedule-grid">
             <thead>
               <tr>
-                <th className="position-head">Puesto</th>
+                <th className="position-head">Pos</th>
                 {slots.map((slot) => (
                   <th key={slot.id} className={slot.id === slotAhoraId ? "time nowcol" : "time"}>
                     {slot.start}

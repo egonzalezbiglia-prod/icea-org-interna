@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -278,6 +278,50 @@ function occupiedStats(serverId: string, assignments: Assignment[], slotsById: M
   return { occupiedHours, shiftCount: serverAssignments.length };
 }
 
+function minutesFromTime(value: string) {
+  const [hours = "0", minutes = "0"] = value.split(":");
+  return Number(hours) * 60 + Number(minutes);
+}
+
+function slotAvailabilityFit(server: Server, slot: Slot) {
+  const slotStart = minutesFromTime(slot.start);
+  const slotEnd = minutesFromTime(slot.end);
+  const ranges = server.availability.filter((range) => range.dayId === slot.dayId);
+  const full = ranges.some((range) => minutesFromTime(range.start) <= slotStart && minutesFromTime(range.end) >= slotEnd);
+  if (full) return "full";
+  const partial = ranges.find((range) => minutesFromTime(range.start) < slotEnd && minutesFromTime(range.end) > slotStart);
+  if (!partial) return "none";
+  const arrivesAfter = minutesFromTime(partial.start) > slotStart;
+  const leavesBefore = minutesFromTime(partial.end) < slotEnd;
+  if (arrivesAfter && leavesBefore) return "partial-both";
+  if (arrivesAfter) return "arrives-after";
+  if (leavesBefore) return "leaves-before";
+  return "none";
+}
+
+function coverageStatus(full: number) {
+  if (full >= 18) return { label: "Ok", tone: "ok" };
+  if (full >= 16) return { label: "Leve", tone: "mild" };
+  if (full >= 12) return { label: "Grave", tone: "serious" };
+  return { label: "Crítico", tone: "critical" };
+}
+
+function coverageRows(data: SchedulePayload) {
+  const activeServers = data.servers.filter((server) => server.active);
+  return data.days.flatMap((day) => data.slots
+    .filter((slot) => slot.dayId === day.id)
+    .map((slot, index) => {
+      const metrics = activeServers.reduce((counts, server) => {
+        const fit = slotAvailabilityFit(server, slot);
+        if (fit === "full") counts.full += 1;
+        if (fit === "arrives-after" || fit === "partial-both") counts.arrivesAfter += 1;
+        if (fit === "leaves-before" || fit === "partial-both") counts.leavesBefore += 1;
+        return counts;
+      }, { full: 0, arrivesAfter: 0, leavesBefore: 0 });
+      return { day, slot, turn: index + 1, status: coverageStatus(metrics.full), ...metrics };
+    }));
+}
+
 function availabilityToText(ranges: AvailabilityRange[]) {
   return ranges.map((range) => range.dayId + " " + range.start + "-" + range.end).join("\n");
 }
@@ -448,8 +492,10 @@ function availabilityTone(percent: number) {
 
 function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
+  const coverage = useMemo(() => coverageRows(data), [data]);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [creatingServer, setCreatingServer] = useState(false);
+  const [coverageOpen, setCoverageOpen] = useState(false);
   const [importingServers, setImportingServers] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
@@ -500,8 +546,28 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
+      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => setCoverageOpen((open) => !open)}><BarChart3 size={16} />Reporte</button><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
       {importMessage ? <p className="import-note">{importMessage}</p> : null}
+
+      {coverageOpen ? (
+        <section className="coverage-report" aria-label="Reporte de cobertura por turno">
+          <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div></div>
+          <div className="admin-table coverage-table">
+            <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full</span><span>Llegan después</span><span>Se van antes</span><span>Estado</span></div>
+            {coverage.map((row) => (
+              <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
+                <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
+                <span>Turno {row.turn}</span>
+                <span>{row.slot.start} - {row.slot.end}</span>
+                <strong>{row.full}</strong>
+                <span>{row.arrivesAfter}</span>
+                <span>{row.leavesBefore}</span>
+                <span className={"coverage-status " + row.status.tone}>{row.status.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {editorOpen ? (
         <div className="modal-backdrop" onClick={() => { setEditingServer(null); setCreatingServer(false); }}>

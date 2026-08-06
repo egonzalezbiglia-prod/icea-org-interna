@@ -971,6 +971,97 @@ h3 {
   grid-template-columns: 48px minmax(180px, 1fr) 132px;
 }
 
+.coverage-report {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--ground);
+  border-bottom: 1px solid var(--line);
+}
+
+.coverage-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.coverage-report-head h4 {
+  margin: 0 0 0.15rem;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.coverage-report-head span {
+  color: var(--ink-dim);
+  font-size: 0.86rem;
+}
+
+.coverage-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.coverage-table {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.coverage-table .admin-table-head,
+.coverage-row {
+  grid-template-columns: minmax(96px, 0.8fr) 82px 112px 64px minmax(118px, 1fr) minmax(108px, 1fr) 92px;
+  min-width: 820px;
+}
+
+.coverage-row {
+  background: var(--surface);
+}
+
+.coverage-row strong {
+  color: var(--ink);
+}
+
+.coverage-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 68px;
+  min-height: 26px;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.coverage-status.ok {
+  color: #115331;
+  background: #d8f0e5;
+  border-color: #a9ddc4;
+}
+
+.coverage-status.mild {
+  color: #5c4a00;
+  background: #fff1a6;
+  border-color: #e9d56b;
+}
+
+.coverage-status.serious {
+  color: #7f2d15;
+  background: #ffd6c9;
+  border-color: #f3a48c;
+}
+
+.coverage-status.critical {
+  color: #7e1717;
+  background: #f8b8b8;
+  border-color: #ec8585;
+}
+
 .admin-new-form input,
 .admin-new-form select,
 .admin-new-form textarea,
@@ -1179,6 +1270,18 @@ h3 {
 
   .admin-table-head {
     display: none;
+  }
+
+  .coverage-table {
+    overflow-x: auto;
+  }
+
+  .coverage-table .admin-table-head {
+    display: grid;
+  }
+
+  .coverage-report-head {
+    display: grid;
   }
 
   .admin-card-head {

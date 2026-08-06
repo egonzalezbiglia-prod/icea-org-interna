@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, BarChart3, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -543,6 +543,20 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     }
   }
 
+  async function refreshData() {
+    setMessage("");
+    try {
+      const next = await apiJson<SchedulePayload>(`/api/schedule?teamId=${encodeURIComponent(teamId)}`);
+      setData(next);
+      setMessage("Info actualizada.");
+      return next;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo actualizar.";
+      setMessage(message);
+      throw new Error(message);
+    }
+  }
+
   const tabs: Array<{ id: AdminTab; label: string; icon: React.ReactNode; count: number }> = [
     { id: "servers", label: "Servidores", icon: <Users size={17} />, count: data.servers.length },
     { id: "slots", label: "Horarios", icon: <CalendarClock size={17} />, count: data.slots.length },
@@ -616,7 +630,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
           </aside>
           <div className="admin-main">
             {message ? <section className="edit-strip"><p>{message}</p></section> : null}
-            {activeTab === "servers" ? <ServersAdmin data={data} onMutate={mutateConfig} /> : null}
+            {activeTab === "servers" ? <ServersAdmin data={data} onMutate={mutateConfig} onRefresh={refreshData} /> : null}
             {activeTab === "slots" ? <SlotsAdmin data={data} onMutate={mutateConfig} /> : null}
             {activeTab === "positions" ? <PositionsAdmin data={data} onMutate={mutateConfig} /> : null}
             {activeTab === "rules" ? <RulesAdmin data={data} onMutate={mutateConfig} /> : null}
@@ -645,13 +659,16 @@ function availabilityTone(percent: number) {
   return "full";
 }
 
-function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
+function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void>; onRefresh: () => Promise<SchedulePayload> }) {
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
-  const coverage = useMemo(() => coverageRows(data), [data]);
+  const [coverageData, setCoverageData] = useState<SchedulePayload | null>(null);
+  const coverageSource = coverageData ?? data;
+  const coverage = useMemo(() => coverageRows(coverageSource), [coverageSource]);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [creatingServer, setCreatingServer] = useState(false);
   const [coverageOpen, setCoverageOpen] = useState(false);
   const [coverageCopyMessage, setCoverageCopyMessage] = useState("");
+  const [refreshingCoverage, setRefreshingCoverage] = useState(false);
   const [importingServers, setImportingServers] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
@@ -700,10 +717,24 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
   async function copyCoverageImage() {
     setCoverageCopyMessage("");
     try {
-      await copiarReporteCoberturaPng(data);
+      await copiarReporteCoberturaPng(coverageSource);
       setCoverageCopyMessage("Reporte copiado. Ya podés pegarlo donde quieras compartirlo.");
     } catch (error) {
       setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo copiar el reporte.");
+    }
+  }
+
+  async function refreshCoverage() {
+    setRefreshingCoverage(true);
+    setCoverageCopyMessage("");
+    try {
+      const next = await onRefresh();
+      setCoverageData(next);
+      setCoverageCopyMessage("Reporte actualizado con la información más reciente.");
+    } catch (error) {
+      setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo actualizar el reporte.");
+    } finally {
+      setRefreshingCoverage(false);
     }
   }
 
@@ -712,13 +743,13 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => setCoverageOpen(true)}><BarChart3 size={16} />Reporte</button><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
+      <div className="admin-card-head"><div><h3>Servidores</h3><span>{data.servers.length} cargados</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => { setCoverageData(data); setCoverageOpen(true); setCoverageCopyMessage(""); }}><BarChart3 size={16} />Reporte</button><button className="ghost-button" type="button" onClick={() => void downloadServerImportTemplate()}><Download size={16} />Modelo</button><label className={importingServers ? "ghost-button disabled" : "ghost-button"}><Upload size={16} />Importar<input type="file" accept=".xlsx,.xls,.csv,text/csv" disabled={importingServers} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void importServersFromFile(file); event.currentTarget.value = ""; }} /></label><button className="primary-button" type="button" onClick={() => { setCreatingServer(true); setEditingServer(null); }}><Plus size={16} />Nuevo</button></div></div>
       {importMessage ? <p className="import-note">{importMessage}</p> : null}
 
       {coverageOpen ? (
         <div className="modal-backdrop" onClick={() => setCoverageOpen(false)}>
           <section className="coverage-report coverage-report-modal" aria-label="Reporte de cobertura por turno" onClick={(event) => event.stopPropagation()}>
-            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
+            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" disabled={refreshingCoverage} onClick={() => void refreshCoverage()}><RefreshCw size={16} />{refreshingCoverage ? "Actualizando" : "Actualizar info"}</button><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">

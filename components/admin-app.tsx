@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock, Check, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { COUNTRIES, cleanPhone, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
+import { COUNTRIES, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -119,6 +119,101 @@ async function downloadServerImportTemplate() {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Servidores");
   XLSX.writeFile(workbook, "modelo-importar-servidores.xlsx");
+}
+
+function redondearRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+}
+
+async function descargarHorariosPng(data: SchedulePayload) {
+  const ancho = 1600;
+  const margen = 80;
+  const espacio = 28;
+  const anchoColumna = (ancho - margen * 2 - espacio * (data.days.length - 1)) / data.days.length;
+  const turnosPorDia = data.days.map((day) => ({
+    day,
+    slots: data.slots.filter((slot) => slot.dayId === day.id),
+  }));
+  const maximoTurnos = Math.max(1, ...turnosPorDia.map((group) => group.slots.length));
+  const altoTarjeta = 112;
+  const alto = Math.max(860, 528 + maximoTurnos * (altoTarjeta + 22));
+  const canvas = document.createElement("canvas");
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No se pudo preparar la imagen.");
+
+  ctx.fillStyle = "#f8fbf2";
+  ctx.fillRect(0, 0, ancho, alto);
+  const fondo = ctx.createLinearGradient(0, 0, ancho, alto);
+  fondo.addColorStop(0, "#123328");
+  fondo.addColorStop(1, "#214f3e");
+  ctx.fillStyle = fondo;
+  redondearRect(ctx, 38, 38, ancho - 76, alto - 76, 36);
+  ctx.fill();
+
+  ctx.fillStyle = "#f6f3e8";
+  ctx.font = "800 54px Georgia, serif";
+  ctx.fillText("Distribucion de turnos", margen, 128);
+  ctx.fillStyle = "rgba(246, 243, 232, 0.76)";
+  ctx.font = "700 20px Arial, sans-serif";
+  ctx.fillText(data.team.name.toUpperCase(), margen, 168);
+  ctx.font = "500 22px Arial, sans-serif";
+  ctx.fillText("Dias, turnos y rangos horarios para organizar el servicio.", margen, 212);
+
+  turnosPorDia.forEach(({ day, slots }, dayIndex) => {
+    const x = margen + dayIndex * (anchoColumna + espacio);
+    const y = 260;
+    redondearRect(ctx, x, y, anchoColumna, 96, 24);
+    ctx.fillStyle = "#d8ff6a";
+    ctx.fill();
+    ctx.fillStyle = "#10241d";
+    ctx.font = "900 34px Arial, sans-serif";
+    ctx.fillText(day.label, x + 28, y + 44);
+    ctx.font = "800 20px Arial, sans-serif";
+    ctx.fillText(fechaCortaDia(day.id, data.team.congressDates), x + 30, y + 74);
+
+    slots.forEach((slot, slotIndex) => {
+      const cardY = y + 128 + slotIndex * (altoTarjeta + 22);
+      redondearRect(ctx, x, cardY, anchoColumna, altoTarjeta, 22);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(16, 36, 29, 0.12)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#1f7a58";
+      ctx.font = "900 24px Arial, sans-serif";
+      ctx.fillText(`Turno ${slotIndex + 1}`, x + 28, cardY + 42);
+      ctx.fillStyle = "#10241d";
+      ctx.font = "900 38px Arial, sans-serif";
+      ctx.fillText(`${slot.start} - ${slot.end}`, x + 28, cardY + 88);
+    });
+
+    if (!slots.length) {
+      redondearRect(ctx, x, y + 128, anchoColumna, altoTarjeta, 22);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.fill();
+      ctx.fillStyle = "#476158";
+      ctx.font = "700 24px Arial, sans-serif";
+      ctx.fillText("Sin turnos cargados", x + 28, y + 192);
+    }
+  });
+
+  ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
+  ctx.font = "600 18px Arial, sans-serif";
+  ctx.fillText("ICEA 2026", margen, alto - 86);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `turnos-${data.team.id}.png`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 async function readServerImportFile(file: File): Promise<ImportedServer[]> {
@@ -451,7 +546,7 @@ function SlotsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body
 
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div>
+      <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void descargarHorariosPng(data)}><Download size={16} />Exportar PNG</button><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div></div>
       {newSlotOpen ? (
         <form className="admin-new-form slot-new-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><button className="primary-button" type="submit">Guardar horario</button></form>
       ) : null}

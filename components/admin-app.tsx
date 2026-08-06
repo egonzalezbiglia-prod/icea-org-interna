@@ -24,6 +24,16 @@ type ImportedServer = {
 
 type CellValue = string | number | boolean | null | undefined;
 
+const COVERAGE_IDEAL_TARGET = 40;
+const COVERAGE_MINIMUM_TARGET = 30;
+const COVERAGE_COMPOSITION = [
+  { position: "Auditorio", ideal: 20, minimum: 18 },
+  { position: "Escalera", ideal: 8, minimum: 6 },
+  { position: "Ascensor", ideal: 4, minimum: 2 },
+  { position: "VIP", ideal: 2, minimum: 1 },
+  { position: "Accesos", ideal: 6, minimum: 4 },
+];
+
 function normalizeTimeToken(value: string) {
   const clean = value.trim().replace(/\./g, ":");
   if (/^\d{1,2}$/.test(clean)) return clean.padStart(2, "0") + ":00";
@@ -241,9 +251,9 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
   const rows = coverageRows(data);
   const margen = 56;
   const paddingTabla = 22;
-  const colWidths = [94, 76, 112, 92, 82, 94, 82, 94, 102, 96];
+  const colWidths = [104, 86, 124, 98, 86, 98, 86, 98, 126, 118];
   const anchoTabla = colWidths.reduce((sum, width) => sum + width, 0) + paddingTabla * 2;
-  const ancho = anchoTabla + margen * 2;
+  const ancho = Math.max(anchoTabla + margen * 2, 1180);
   const altoFila = 44;
   const alto = Math.max(760, 390 + rows.length * altoFila);
   const canvas = document.createElement("canvas");
@@ -270,9 +280,35 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
   ctx.font = "500 18px Arial, sans-serif";
   ctx.fillText("Simulación por orden de sugerencia, sin superar turnos consecutivos por día.", margen, 166);
 
+  const compositionX = ancho - margen - 392;
+  const compositionY = 54;
+  const compositionRowHeight = 20;
+  redondearRect(ctx, compositionX, compositionY, 392, 168, 18);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(216, 255, 106, 0.22)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "rgba(246, 243, 232, 0.82)";
+  ctx.font = "800 13px Arial, sans-serif";
+  ctx.fillText("Composición por puesto", compositionX + 18, compositionY + 26);
+  ctx.fillStyle = "rgba(216, 255, 106, 0.94)";
+  ctx.font = "900 12px Arial, sans-serif";
+  ctx.fillText("Puesto", compositionX + 18, compositionY + 52);
+  ctx.fillText("Ideal", compositionX + 238, compositionY + 52);
+  ctx.fillText("Mínimo", compositionX + 306, compositionY + 52);
+  ctx.fillStyle = "rgba(246, 243, 232, 0.82)";
+  ctx.font = "700 13px Arial, sans-serif";
+  COVERAGE_COMPOSITION.forEach((item, index) => {
+    const y = compositionY + 76 + index * compositionRowHeight;
+    ctx.fillText(item.position, compositionX + 18, y);
+    ctx.fillText(String(item.ideal), compositionX + 248, y);
+    ctx.fillText(String(item.minimum), compositionX + 322, y);
+  });
+
   const tableX = margen;
-  const tableY = 218;
-  const headers = ["Día", "Turno", "Horario", "Full bruto", "Neto 20", "Estado 20", "Neto 18", "Estado 18", "Llegan dps.", "Se van ant."];
+  const tableY = 236;
+  const headers = ["Día", "Turno", "Horario", "Full bruto", "Neto 40", "Estado 40", "Neto 30", "Estado 30", "Llegan dps.", "Se van ant."];
   redondearRect(ctx, tableX, tableY, anchoTabla, 50, 18);
   ctx.fillStyle = "#d8ff6a";
   ctx.fill();
@@ -294,9 +330,9 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       `Turno ${row.turn}`,
       `${row.slot.start} - ${row.slot.end}`,
       String(row.grossFull),
-      String(row.net20),
+      String(row.idealNet),
       "",
-      String(row.net18),
+      String(row.minimumNet),
       "",
       String(row.arrivesAfter),
       String(row.leavesBefore),
@@ -316,8 +352,8 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       critical: ["#f8b8b8", "#7e1717"],
     } as Record<string, [string, string]>;
     [
-      { status: row.status20, index: 5 },
-      { status: row.status18, index: 7 },
+      { status: row.idealStatus, index: 5 },
+      { status: row.minimumStatus, index: 7 },
     ].forEach(({ status, index }) => {
       const statusX = tableX + paddingTabla + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
       const [bg, fg] = tones[status.tone] ?? tones.critical;
@@ -406,10 +442,10 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function coverageStatus(full: number) {
-  if (full >= 18) return { label: "Ok", tone: "ok" };
-  if (full >= 16) return { label: "Leve", tone: "mild" };
-  if (full >= 12) return { label: "Grave", tone: "serious" };
+function coverageStatus(full: number, minimum = COVERAGE_MINIMUM_TARGET) {
+  if (full >= minimum) return { label: "Ok", tone: "ok" };
+  if (full >= minimum - 2) return { label: "Leve", tone: "mild" };
+  if (full >= minimum - 6) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 
@@ -465,7 +501,7 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
   const XLSX = await import("xlsx");
   const workbook = XLSX.utils.book_new();
 
-  [20, 18].forEach((targetFull) => {
+  [COVERAGE_IDEAL_TARGET, COVERAGE_MINIMUM_TARGET].forEach((targetFull) => {
     const simulation = simulatedNetFullBySlot(data, targetFull);
     const assignedCountByServer = new Map<string, number>();
     simulation.assignmentsBySlot.forEach((servers) => {
@@ -499,8 +535,8 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
 
 function coverageRows(data: SchedulePayload) {
   const activeServers = data.servers.filter((server) => server.active);
-  const net20BySlot = simulatedNetFullBySlot(data, 20).netBySlot;
-  const net18BySlot = simulatedNetFullBySlot(data, 18).netBySlot;
+  const idealNetBySlot = simulatedNetFullBySlot(data, COVERAGE_IDEAL_TARGET).netBySlot;
+  const minimumNetBySlot = simulatedNetFullBySlot(data, COVERAGE_MINIMUM_TARGET).netBySlot;
   return data.days.flatMap((day) => data.slots
     .filter((slot) => slot.dayId === day.id)
     .map((slot, index) => {
@@ -511,9 +547,9 @@ function coverageRows(data: SchedulePayload) {
         if (fit === "leaves-before" || fit === "partial-both") counts.leavesBefore += 1;
         return counts;
       }, { grossFull: 0, arrivesAfter: 0, leavesBefore: 0 });
-      const net20 = net20BySlot.get(slot.id) ?? metrics.grossFull;
-      const net18 = net18BySlot.get(slot.id) ?? metrics.grossFull;
-      return { day, slot, turn: index + 1, net20, net18, status20: coverageStatus(net20), status18: coverageStatus(net18), ...metrics };
+      const idealNet = idealNetBySlot.get(slot.id) ?? metrics.grossFull;
+      const minimumNet = minimumNetBySlot.get(slot.id) ?? metrics.grossFull;
+      return { day, slot, turn: index + 1, idealNet, minimumNet, idealStatus: coverageStatus(idealNet), minimumStatus: coverageStatus(minimumNet), ...metrics };
     }));
 }
 
@@ -784,7 +820,7 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
     setCoverageCopyMessage("");
     try {
       await downloadCoverageSuggestion(coverageSource);
-      setCoverageCopyMessage("Sugerencia descargada con objetivos 20 y 18.");
+      setCoverageCopyMessage("Sugerencia descargada con objetivos 40 y 30.");
     } catch (error) {
       setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo descargar la sugerencia.");
     } finally {
@@ -807,17 +843,17 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">
-              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full bruto</span><span>Neto 20</span><span>Estado 20</span><span>Neto 18</span><span>Estado 18</span><span>Llegan dps.</span><span>Se van ant.</span></div>
+              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full bruto</span><span>Neto 40</span><span>Estado 40</span><span>Neto 30</span><span>Estado 30</span><span>Llegan dps.</span><span>Se van ant.</span></div>
               {coverage.map((row) => (
                 <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
                   <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
                   <span>Turno {row.turn}</span>
                   <span>{row.slot.start} - {row.slot.end}</span>
                   <strong>{row.grossFull}</strong>
-                  <strong>{row.net20}</strong>
-                  <span className={"coverage-status " + row.status20.tone}>{row.status20.label}</span>
-                  <strong>{row.net18}</strong>
-                  <span className={"coverage-status " + row.status18.tone}>{row.status18.label}</span>
+                  <strong>{row.idealNet}</strong>
+                  <span className={"coverage-status " + row.idealStatus.tone}>{row.idealStatus.label}</span>
+                  <strong>{row.minimumNet}</strong>
+                  <span className={"coverage-status " + row.minimumStatus.tone}>{row.minimumStatus.label}</span>
                   <span>{row.arrivesAfter}</span>
                   <span>{row.leavesBefore}</span>
                 </div>

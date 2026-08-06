@@ -421,6 +421,7 @@ function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
   const activeServers = data.servers.filter((server) => server.active);
   const simulatedLoad = new Map(activeServers.map((server) => [server.id, { occupiedHours: 0, shiftCount: 0 }]));
   const netBySlot = new Map<string, number>();
+  const assignmentsBySlot = new Map<string, Server[]>();
 
   data.days.forEach((day) => {
     const streakByServer = new Map(activeServers.map((server) => [server.id, 0]));
@@ -443,6 +444,7 @@ function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
             return a.fullName.localeCompare(b.fullName, "es");
           })
           .slice(0, targetFull);
+        assignmentsBySlot.set(slot.id, chosen);
         const chosenIds = new Set(chosen.map((server) => server.id));
         activeServers.forEach((server) => {
           streakByServer.set(server.id, chosenIds.has(server.id) ? (streakByServer.get(server.id) ?? 0) + 1 : 0);
@@ -454,13 +456,49 @@ function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
       });
   });
 
-  return netBySlot;
+  return { netBySlot, assignmentsBySlot };
+}
+
+async function downloadCoverageSuggestion(data: SchedulePayload) {
+  const XLSX = await import("xlsx");
+  const workbook = XLSX.utils.book_new();
+
+  [20, 18].forEach((targetFull) => {
+    const simulation = simulatedNetFullBySlot(data, targetFull);
+    const assignedCountByServer = new Map<string, number>();
+    simulation.assignmentsBySlot.forEach((servers) => {
+      servers.forEach((server) => assignedCountByServer.set(server.id, (assignedCountByServer.get(server.id) ?? 0) + 1));
+    });
+    const rows = [
+      ["Día", "Turno", "Horario", "Orden", "Servidor", "WhatsApp", "Disponibilidad total", "Turnos simulados"],
+      ...data.days.flatMap((day) => data.slots
+        .filter((slot) => slot.dayId === day.id)
+        .flatMap((slot, slotIndex) => {
+          const assigned = simulation.assignmentsBySlot.get(slot.id) ?? [];
+          return assigned.map((server, serverIndex) => [
+            etiquetaDia(day.id, day.label),
+            `Turno ${slotIndex + 1}`,
+            `${slot.start} - ${slot.end}`,
+            serverIndex + 1,
+            server.fullName,
+            server.whatsapp,
+            availabilityToText(server.availability),
+            assignedCountByServer.get(server.id) ?? 0,
+          ]);
+        })),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 30 }, { wch: 18 }, { wch: 42 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Objetivo ${targetFull}`);
+  });
+
+  XLSX.writeFile(workbook, "sugerencia-asignacion-servidores.xlsx");
 }
 
 function coverageRows(data: SchedulePayload) {
   const activeServers = data.servers.filter((server) => server.active);
-  const net20BySlot = simulatedNetFullBySlot(data, 20);
-  const net18BySlot = simulatedNetFullBySlot(data, 18);
+  const net20BySlot = simulatedNetFullBySlot(data, 20).netBySlot;
+  const net18BySlot = simulatedNetFullBySlot(data, 18).netBySlot;
   return data.days.flatMap((day) => data.slots
     .filter((slot) => slot.dayId === day.id)
     .map((slot, index) => {
@@ -669,6 +707,7 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
   const [coverageOpen, setCoverageOpen] = useState(false);
   const [coverageCopyMessage, setCoverageCopyMessage] = useState("");
   const [refreshingCoverage, setRefreshingCoverage] = useState(false);
+  const [downloadingSuggestion, setDownloadingSuggestion] = useState(false);
   const [importingServers, setImportingServers] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
@@ -738,6 +777,19 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
     }
   }
 
+  async function downloadSuggestion() {
+    setDownloadingSuggestion(true);
+    setCoverageCopyMessage("");
+    try {
+      await downloadCoverageSuggestion(coverageSource);
+      setCoverageCopyMessage("Sugerencia descargada con objetivos 20 y 18.");
+    } catch (error) {
+      setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo descargar la sugerencia.");
+    } finally {
+      setDownloadingSuggestion(false);
+    }
+  }
+
   const editorServer = creatingServer ? null : editingServer;
   const editorOpen = creatingServer || Boolean(editingServer);
 
@@ -749,7 +801,7 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
       {coverageOpen ? (
         <div className="modal-backdrop" onClick={() => setCoverageOpen(false)}>
           <section className="coverage-report coverage-report-modal" aria-label="Reporte de cobertura por turno" onClick={(event) => event.stopPropagation()}>
-            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" disabled={refreshingCoverage} onClick={() => void refreshCoverage()}><RefreshCw size={16} />{refreshingCoverage ? "Actualizando" : "Actualizar info"}</button><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
+            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" disabled={refreshingCoverage} onClick={() => void refreshCoverage()}><RefreshCw size={16} />{refreshingCoverage ? "Actualizando" : "Actualizar info"}</button><button className="ghost-button" type="button" disabled={downloadingSuggestion} onClick={() => void downloadSuggestion()}><Download size={16} />{downloadingSuggestion ? "Descargando" : "Descargar sugerencia"}</button><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">

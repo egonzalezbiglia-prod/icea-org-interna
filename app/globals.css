@@ -421,6 +421,14 @@ h3 {
   padding-top: 0;
 }
 
+.result-list-card li > span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .result-list-card li small {
   flex: 0 0 auto;
   color: var(--accent-ink);
@@ -2033,9 +2041,23 @@ h3 {
 }
 
 .you-chip b {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.55rem;
   color: var(--ink);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+}
+
+.you-chip b span,
+.result-list-card li span b {
+  color: var(--accent-ink);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .you-chip small {
@@ -2049,6 +2071,7 @@ h3 {
 }
 
 .you-chip.now b,
+.you-chip.now b span,
 .you-chip.now small {
   color: var(--warm-ink);
 }
@@ -2063,6 +2086,25 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
+.schedule-grid thead th.time .slot-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.schedule-grid thead th.time .slot-hours {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.schedule-grid thead th.time .slot-hours strong {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .schedule-grid thead th.time small {
   display: block;
   color: var(--ink-dim);
@@ -2070,12 +2112,23 @@ h3 {
   font-weight: 600;
 }
 
+.schedule-grid thead th.time .slot-turn {
+  color: var(--accent-ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .schedule-grid thead th.nowcol {
   color: var(--grid-now-ink);
   background: var(--grid-head-now);
 }
 
-.schedule-grid thead th.nowcol small {
+.schedule-grid thead th.nowcol small,
+.schedule-grid thead th.nowcol .slot-turn {
   color: var(--grid-now-ink);
   opacity: 0.85;
 }

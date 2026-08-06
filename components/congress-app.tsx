@@ -216,6 +216,13 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     return `Puesto ${positionId}`;
   };
 
+  const turnoPorSlot = (slot?: Slot | null) => {
+    if (!slot) return null;
+    const turnosDelDia = data.slots.filter((item) => item.dayId === slot.dayId);
+    const indice = turnosDelDia.findIndex((item) => item.id === slot.id);
+    return indice >= 0 ? indice + 1 : null;
+  };
+
   const nombrePersona = personalShifts[0]?.assignment.serverName ?? "";
   const inicialPersona = nombrePersona.trim().charAt(0).toUpperCase();
   const labelDiaActivo = data.days.find((day) => day.id === activeDay)?.label ?? "";
@@ -347,9 +354,10 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                     <div className="you-shifts">
                       {grupoDiaActivo.shifts.map(({ assignment, slot }) => {
                         const esAhora = Boolean(slot && slot.id === slotAhoraId);
+                        const turno = turnoPorSlot(slot);
                         return (
                           <div className={esAhora ? "you-chip now" : "you-chip"} key={assignment.id}>
-                            <b>{slot?.label}</b>
+                            <b>{slot?.label}{turno ? <span>Turno {turno}</span> : null}</b>
                             <small>{nombrePuesto(assignment.positionId)}{esAhora ? " · ahora" : ""}</small>
                           </div>
                         );
@@ -368,7 +376,10 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                         <article className="result-card result-list-card">
                           <strong>{shifts[0]?.assignment.serverName}</strong>
                           <ul>
-                            {shifts.map(({ assignment, slot }) => <li key={assignment.id}><span>{slot?.label}</span><small>{nombrePuesto(assignment.positionId)}</small></li>)}
+                            {shifts.map(({ assignment, slot }) => {
+                              const turno = turnoPorSlot(slot);
+                              return <li key={assignment.id}><span>{slot?.label}{turno ? <b>Turno {turno}</b> : null}</span><small>{nombrePuesto(assignment.positionId)}</small></li>;
+                            })}
                           </ul>
                         </article>
                       </section>
@@ -394,10 +405,15 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
             <thead>
               <tr>
                 <th className="position-head">Pos</th>
-                {slots.map((slot) => (
+                {slots.map((slot, index) => (
                   <th key={slot.id} className={slot.id === slotAhoraId ? "time nowcol" : "time"}>
-                    {slot.start}
-                    <small>{slot.end}{slot.id === slotAhoraId ? " · ahora" : ""}</small>
+                    <span className="slot-head">
+                      <span className="slot-hours">
+                        <strong>{slot.start}</strong>
+                        <small>{slot.end}{slot.id === slotAhoraId ? " · ahora" : ""}</small>
+                      </span>
+                      <span className="slot-turn">Turno {index + 1}</span>
+                    </span>
                   </th>
                 ))}
               </tr>

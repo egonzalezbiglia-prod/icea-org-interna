@@ -126,16 +126,35 @@ function redondearRect(ctx: CanvasRenderingContext2D, x: number, y: number, widt
   ctx.roundRect(x, y, width, height, radius);
 }
 
+function etiquetaDia(dayId: DayId, fallback: string) {
+  const etiquetas: Record<DayId, string> = { jueves: "Jueves", viernes: "Viernes", sabado: "Sábado" };
+  return etiquetas[dayId] ?? fallback;
+}
+
+function firmaTurnos(slots: Slot[]) {
+  return slots.map((slot) => `${slot.start}-${slot.end}`).join("|");
+}
+
 async function copiarHorariosPng(data: SchedulePayload) {
   const ancho = 1600;
   const margen = 80;
   const espacio = 28;
-  const anchoColumna = (ancho - margen * 2 - espacio * (data.days.length - 1)) / data.days.length;
   const turnosPorDia = data.days.map((day) => ({
     day,
     slots: data.slots.filter((slot) => slot.dayId === day.id),
   }));
-  const maximoTurnos = Math.max(1, ...turnosPorDia.map((group) => group.slots.length));
+  const gruposDeTurnos = turnosPorDia.reduce<Array<{ days: typeof data.days; slots: Slot[]; signature: string }>>((groups, current) => {
+    const signature = firmaTurnos(current.slots);
+    const existing = groups.find((group) => group.signature === signature);
+    if (existing) {
+      existing.days.push(current.day);
+    } else {
+      groups.push({ days: [current.day], slots: current.slots, signature });
+    }
+    return groups;
+  }, []);
+  const anchoColumna = (ancho - margen * 2 - espacio * (gruposDeTurnos.length - 1)) / gruposDeTurnos.length;
+  const maximoTurnos = Math.max(1, ...gruposDeTurnos.map((group) => group.slots.length));
   const altoTarjeta = 112;
   const alto = Math.max(860, 528 + maximoTurnos * (altoTarjeta + 22));
   const canvas = document.createElement("canvas");
@@ -155,14 +174,14 @@ async function copiarHorariosPng(data: SchedulePayload) {
 
   ctx.fillStyle = "#f6f3e8";
   ctx.font = "800 54px Georgia, serif";
-  ctx.fillText("Distribucion de turnos", margen, 128);
+  ctx.fillText("Distribución de turnos", margen, 128);
   ctx.fillStyle = "rgba(246, 243, 232, 0.76)";
   ctx.font = "700 20px Arial, sans-serif";
   ctx.fillText(data.team.name.toUpperCase(), margen, 168);
   ctx.font = "500 22px Arial, sans-serif";
-  ctx.fillText("Dias, turnos y rangos horarios para organizar el servicio.", margen, 212);
+  ctx.fillText("Días, turnos y rangos horarios para organizar el servicio.", margen, 212);
 
-  turnosPorDia.forEach(({ day, slots }, dayIndex) => {
+  gruposDeTurnos.forEach(({ days, slots }, dayIndex) => {
     const x = margen + dayIndex * (anchoColumna + espacio);
     const y = 260;
     redondearRect(ctx, x, y, anchoColumna, 96, 24);
@@ -170,9 +189,9 @@ async function copiarHorariosPng(data: SchedulePayload) {
     ctx.fill();
     ctx.fillStyle = "#10241d";
     ctx.font = "900 34px Arial, sans-serif";
-    ctx.fillText(day.label, x + 28, y + 44);
+    ctx.fillText(days.map((day) => etiquetaDia(day.id, day.label)).join(" y "), x + 28, y + 44);
     ctx.font = "800 20px Arial, sans-serif";
-    ctx.fillText(fechaCortaDia(day.id, data.team.congressDates), x + 30, y + 74);
+    ctx.fillText(days.map((day) => fechaCortaDia(day.id, data.team.congressDates)).join(" y "), x + 30, y + 74);
 
     slots.forEach((slot, slotIndex) => {
       const cardY = y + 128 + slotIndex * (altoTarjeta + 22);
@@ -202,14 +221,14 @@ async function copiarHorariosPng(data: SchedulePayload) {
   });
 
   ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
-  ctx.font = "600 18px Arial, sans-serif";
+  ctx.font = "700 24px Arial, sans-serif";
   ctx.fillText("ICEA 2026", margen, alto - 86);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
   });
   if (!navigator.clipboard?.write || !("ClipboardItem" in window)) {
-    throw new Error("Este navegador no permite copiar imagenes al portapapeles.");
+    throw new Error("Este navegador no permite copiar imágenes al portapapeles.");
   }
   await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 }

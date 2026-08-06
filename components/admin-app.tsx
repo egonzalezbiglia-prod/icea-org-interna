@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -126,7 +126,7 @@ function redondearRect(ctx: CanvasRenderingContext2D, x: number, y: number, widt
   ctx.roundRect(x, y, width, height, radius);
 }
 
-async function descargarHorariosPng(data: SchedulePayload) {
+async function copiarHorariosPng(data: SchedulePayload) {
   const ancho = 1600;
   const margen = 80;
   const espacio = 28;
@@ -208,12 +208,10 @@ async function descargarHorariosPng(data: SchedulePayload) {
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
   });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `turnos-${data.team.id}.png`;
-  link.click();
-  URL.revokeObjectURL(url);
+  if (!navigator.clipboard?.write || !("ClipboardItem" in window)) {
+    throw new Error("Este navegador no permite copiar imagenes al portapapeles.");
+  }
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 }
 
 async function readServerImportFile(file: File): Promise<ImportedServer[]> {
@@ -532,6 +530,7 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
 function SlotsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body: Record<string, unknown>) => Promise<void> }) {
   const [newSlotOpen, setNewSlotOpen] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
 
   async function saveSlot(event: React.FormEvent<HTMLFormElement>, slot?: Slot) {
     event.preventDefault();
@@ -544,9 +543,20 @@ function SlotsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body
     }
   }
 
+  async function copySlotsImage() {
+    setCopyMessage("");
+    try {
+      await copiarHorariosPng(data);
+      setCopyMessage("Imagen copiada. Ya podés pegarla donde quieras compartirla.");
+    } catch (error) {
+      setCopyMessage(error instanceof Error ? error.message : "No se pudo copiar la imagen.");
+    }
+  }
+
   return (
     <section className="admin-card">
-      <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void descargarHorariosPng(data)}><Download size={16} />Exportar PNG</button><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div></div>
+      <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void copySlotsImage()}><Copy size={16} />Copiar imagen</button><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div></div>
+      {copyMessage ? <p className="import-note">{copyMessage}</p> : null}
       {newSlotOpen ? (
         <form className="admin-new-form slot-new-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><button className="primary-button" type="submit">Guardar horario</button></form>
       ) : null}

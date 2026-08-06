@@ -404,9 +404,9 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function coverageStatus(full: number, targetFull: number) {
-  if (full >= targetFull) return { label: "Ok", tone: "ok" };
-  if (full >= targetFull - 2) return { label: "Leve", tone: "mild" };
+function coverageStatus(full: number) {
+  if (full >= 18) return { label: "Ok", tone: "ok" };
+  if (full >= 16) return { label: "Leve", tone: "mild" };
   if (full >= 12) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
@@ -473,7 +473,7 @@ function coverageRows(data: SchedulePayload) {
       }, { grossFull: 0, arrivesAfter: 0, leavesBefore: 0 });
       const net20 = net20BySlot.get(slot.id) ?? metrics.grossFull;
       const net18 = net18BySlot.get(slot.id) ?? metrics.grossFull;
-      return { day, slot, turn: index + 1, net20, net18, status20: coverageStatus(net20, 20), status18: coverageStatus(net18, 18), ...metrics };
+      return { day, slot, turn: index + 1, net20, net18, status20: coverageStatus(net20), status18: coverageStatus(net18), ...metrics };
     }));
 }
 

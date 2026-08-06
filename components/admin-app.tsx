@@ -442,10 +442,17 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function coverageStatus(full: number) {
+function idealCoverageStatus(full: number) {
   if (full >= 36) return { label: "Ok", tone: "ok" };
   if (full >= 30) return { label: "Leve", tone: "mild" };
   if (full >= 26) return { label: "Grave", tone: "serious" };
+  return { label: "Crítico", tone: "critical" };
+}
+
+function minimumCoverageStatus(full: number) {
+  if (full >= 30) return { label: "Ok", tone: "ok" };
+  if (full >= 28) return { label: "Leve", tone: "mild" };
+  if (full >= 24) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 
@@ -549,7 +556,7 @@ function coverageRows(data: SchedulePayload) {
       }, { grossFull: 0, arrivesAfter: 0, leavesBefore: 0 });
       const idealNet = idealNetBySlot.get(slot.id) ?? metrics.grossFull;
       const minimumNet = minimumNetBySlot.get(slot.id) ?? metrics.grossFull;
-      return { day, slot, turn: index + 1, idealNet, minimumNet, idealStatus: coverageStatus(idealNet), minimumStatus: coverageStatus(minimumNet), ...metrics };
+      return { day, slot, turn: index + 1, idealNet, minimumNet, idealStatus: idealCoverageStatus(idealNet), minimumStatus: minimumCoverageStatus(minimumNet), ...metrics };
     }));
 }
 

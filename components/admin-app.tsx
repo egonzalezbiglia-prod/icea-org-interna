@@ -135,6 +135,13 @@ function firmaTurnos(slots: Slot[]) {
   return slots.map((slot) => `${slot.start}-${slot.end}`).join("|");
 }
 
+async function copiarBlobPng(blob: Blob) {
+  if (!navigator.clipboard?.write || !("ClipboardItem" in window)) {
+    throw new Error("Este navegador no permite copiar imágenes al portapapeles.");
+  }
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+}
+
 async function copiarHorariosPng(data: SchedulePayload) {
   const ancho = 1100;
   const margen = 56;
@@ -227,10 +234,99 @@ async function copiarHorariosPng(data: SchedulePayload) {
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
   });
-  if (!navigator.clipboard?.write || !("ClipboardItem" in window)) {
-    throw new Error("Este navegador no permite copiar imágenes al portapapeles.");
-  }
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+  await copiarBlobPng(blob);
+}
+
+async function copiarReporteCoberturaPng(data: SchedulePayload) {
+  const rows = coverageRows(data);
+  const ancho = 1280;
+  const margen = 56;
+  const altoFila = 44;
+  const alto = Math.max(760, 390 + rows.length * altoFila);
+  const canvas = document.createElement("canvas");
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No se pudo preparar la imagen.");
+
+  ctx.fillStyle = "#f8fbf2";
+  ctx.fillRect(0, 0, ancho, alto);
+  const fondo = ctx.createLinearGradient(0, 0, ancho, alto);
+  fondo.addColorStop(0, "#123328");
+  fondo.addColorStop(1, "#214f3e");
+  ctx.fillStyle = fondo;
+  redondearRect(ctx, 28, 28, ancho - 56, alto - 56, 30);
+  ctx.fill();
+
+  ctx.fillStyle = "#f6f3e8";
+  ctx.font = "800 44px Georgia, serif";
+  ctx.fillText("Reporte de cobertura", margen, 96);
+  ctx.fillStyle = "rgba(246, 243, 232, 0.76)";
+  ctx.font = "700 17px Arial, sans-serif";
+  ctx.fillText(data.team.name.toUpperCase(), margen, 132);
+  ctx.font = "500 18px Arial, sans-serif";
+  ctx.fillText("Servidores activos por día y turno. Estado basado en cobertura Full.", margen, 166);
+
+  const tableX = margen;
+  const tableY = 218;
+  const colWidths = [142, 106, 148, 76, 168, 154, 118];
+  const headers = ["Día", "Turno", "Horario", "Full", "Llegan después", "Se van antes", "Estado"];
+  redondearRect(ctx, tableX, tableY, ancho - margen * 2, 50, 18);
+  ctx.fillStyle = "#d8ff6a";
+  ctx.fill();
+  ctx.fillStyle = "#10241d";
+  ctx.font = "900 16px Arial, sans-serif";
+  let x = tableX + 22;
+  headers.forEach((header, index) => {
+    ctx.fillText(header, x, tableY + 32);
+    x += colWidths[index];
+  });
+
+  rows.forEach((row, rowIndex) => {
+    const y = tableY + 62 + rowIndex * altoFila;
+    redondearRect(ctx, tableX, y, ancho - margen * 2, 36, 12);
+    ctx.fillStyle = rowIndex % 2 === 0 ? "rgba(255, 255, 255, 0.94)" : "rgba(255, 255, 255, 0.86)";
+    ctx.fill();
+    const values = [
+      etiquetaDia(row.day.id, row.day.label),
+      `Turno ${row.turn}`,
+      `${row.slot.start} - ${row.slot.end}`,
+      String(row.full),
+      String(row.arrivesAfter),
+      String(row.leavesBefore),
+    ];
+    ctx.fillStyle = "#10241d";
+    ctx.font = "800 16px Arial, sans-serif";
+    let cellX = tableX + 22;
+    values.forEach((value, index) => {
+      ctx.fillText(value, cellX, y + 24);
+      cellX += colWidths[index];
+    });
+
+    const statusX = tableX + 22 + colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
+    const tones = {
+      ok: ["#d8f0e5", "#115331"],
+      mild: ["#fff1a6", "#5c4a00"],
+      serious: ["#ffd6c9", "#7f2d15"],
+      critical: ["#f8b8b8", "#7e1717"],
+    } as Record<string, [string, string]>;
+    const [bg, fg] = tones[row.status.tone] ?? tones.critical;
+    redondearRect(ctx, statusX, y + 5, 82, 26, 13);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.fillStyle = fg;
+    ctx.font = "900 14px Arial, sans-serif";
+    ctx.fillText(row.status.label, statusX + 16, y + 23);
+  });
+
+  ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
+  ctx.font = "700 22px Arial, sans-serif";
+  ctx.fillText("ICEA 2026", margen, alto - 64);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
+  });
+  await copiarBlobPng(blob);
 }
 
 async function readServerImportFile(file: File): Promise<ImportedServer[]> {
@@ -496,6 +592,7 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [creatingServer, setCreatingServer] = useState(false);
   const [coverageOpen, setCoverageOpen] = useState(false);
+  const [coverageCopyMessage, setCoverageCopyMessage] = useState("");
   const [importingServers, setImportingServers] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
@@ -541,6 +638,16 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
     setCreatingServer(false);
   }
 
+  async function copyCoverageImage() {
+    setCoverageCopyMessage("");
+    try {
+      await copiarReporteCoberturaPng(data);
+      setCoverageCopyMessage("Reporte copiado. Ya podés pegarlo donde quieras compartirlo.");
+    } catch (error) {
+      setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo copiar el reporte.");
+    }
+  }
+
   const editorServer = creatingServer ? null : editingServer;
   const editorOpen = creatingServer || Boolean(editingServer);
 
@@ -551,7 +658,8 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
 
       {coverageOpen ? (
         <section className="coverage-report" aria-label="Reporte de cobertura por turno">
-          <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div></div>
+          <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div></div></div>
+          {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
           <div className="admin-table coverage-table">
             <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full</span><span>Llegan después</span><span>Se van antes</span><span>Estado</span></div>
             {coverage.map((row) => (

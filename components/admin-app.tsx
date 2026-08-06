@@ -265,12 +265,12 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
   ctx.font = "700 17px Arial, sans-serif";
   ctx.fillText(data.team.name.toUpperCase(), margen, 132);
   ctx.font = "500 18px Arial, sans-serif";
-  ctx.fillText("Servidores activos por día y turno. Estado basado en cobertura Full.", margen, 166);
+  ctx.fillText("Simulación por orden de sugerencia, sin superar turnos consecutivos por día.", margen, 166);
 
   const tableX = margen;
   const tableY = 218;
-  const colWidths = [142, 106, 148, 76, 168, 154, 118];
-  const headers = ["Día", "Turno", "Horario", "Full", "Llegan después", "Se van antes", "Estado"];
+  const colWidths = [94, 76, 112, 92, 82, 94, 82, 94, 116, 100];
+  const headers = ["Día", "Turno", "Horario", "Full bruto", "Neto 20", "Estado 20", "Neto 18", "Estado 18", "Llegan dps.", "Se van ant."];
   redondearRect(ctx, tableX, tableY, ancho - margen * 2, 50, 18);
   ctx.fillStyle = "#d8ff6a";
   ctx.fill();
@@ -291,7 +291,11 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       etiquetaDia(row.day.id, row.day.label),
       `Turno ${row.turn}`,
       `${row.slot.start} - ${row.slot.end}`,
-      String(row.full),
+      String(row.grossFull),
+      String(row.net20),
+      "",
+      String(row.net18),
+      "",
       String(row.arrivesAfter),
       String(row.leavesBefore),
     ];
@@ -303,20 +307,25 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       cellX += colWidths[index];
     });
 
-    const statusX = tableX + 22 + colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
     const tones = {
       ok: ["#d8f0e5", "#115331"],
       mild: ["#fff1a6", "#5c4a00"],
       serious: ["#ffd6c9", "#7f2d15"],
       critical: ["#f8b8b8", "#7e1717"],
     } as Record<string, [string, string]>;
-    const [bg, fg] = tones[row.status.tone] ?? tones.critical;
-    redondearRect(ctx, statusX, y + 5, 82, 26, 13);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.fillStyle = fg;
-    ctx.font = "900 14px Arial, sans-serif";
-    ctx.fillText(row.status.label, statusX + 16, y + 23);
+    [
+      { status: row.status20, index: 5 },
+      { status: row.status18, index: 7 },
+    ].forEach(({ status, index }) => {
+      const statusX = tableX + 22 + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
+      const [bg, fg] = tones[status.tone] ?? tones.critical;
+      redondearRect(ctx, statusX, y + 5, 78, 26, 13);
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.fillStyle = fg;
+      ctx.font = "900 14px Arial, sans-serif";
+      ctx.fillText(status.label, statusX + 14, y + 23);
+    });
   });
 
   ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
@@ -395,26 +404,76 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function coverageStatus(full: number) {
-  if (full >= 18) return { label: "Ok", tone: "ok" };
-  if (full >= 16) return { label: "Leve", tone: "mild" };
+function coverageStatus(full: number, targetFull: number) {
+  if (full >= targetFull) return { label: "Ok", tone: "ok" };
+  if (full >= targetFull - 2) return { label: "Leve", tone: "mild" };
   if (full >= 12) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 
+function isFullAvailable(server: Server, slot: Slot) {
+  const slotStart = minutesFromTime(slot.start);
+  const slotEnd = minutesFromTime(slot.end);
+  return server.availability.some((range) => range.dayId === slot.dayId && minutesFromTime(range.start) <= slotStart && minutesFromTime(range.end) >= slotEnd);
+}
+
+function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
+  const activeServers = data.servers.filter((server) => server.active);
+  const simulatedLoad = new Map(activeServers.map((server) => [server.id, { occupiedHours: 0, shiftCount: 0 }]));
+  const netBySlot = new Map<string, number>();
+
+  data.days.forEach((day) => {
+    const streakByServer = new Map(activeServers.map((server) => [server.id, 0]));
+    data.slots
+      .filter((slot) => slot.dayId === day.id)
+      .forEach((slot) => {
+        const eligible = activeServers
+          .filter((server) => isFullAvailable(server, slot))
+          .filter((server) => (streakByServer.get(server.id) ?? 0) < data.settings.maxConsecutiveShifts);
+        netBySlot.set(slot.id, eligible.length);
+
+        const chosen = eligible
+          .sort((a, b) => {
+            const availabilityDiff = availabilityHours(a) - availabilityHours(b);
+            if (availabilityDiff !== 0) return availabilityDiff;
+            const loadA = simulatedLoad.get(a.id) ?? { occupiedHours: 0, shiftCount: 0 };
+            const loadB = simulatedLoad.get(b.id) ?? { occupiedHours: 0, shiftCount: 0 };
+            if (loadA.occupiedHours !== loadB.occupiedHours) return loadA.occupiedHours - loadB.occupiedHours;
+            if (loadA.shiftCount !== loadB.shiftCount) return loadA.shiftCount - loadB.shiftCount;
+            return a.fullName.localeCompare(b.fullName, "es");
+          })
+          .slice(0, targetFull);
+        const chosenIds = new Set(chosen.map((server) => server.id));
+        activeServers.forEach((server) => {
+          streakByServer.set(server.id, chosenIds.has(server.id) ? (streakByServer.get(server.id) ?? 0) + 1 : 0);
+        });
+        chosen.forEach((server) => {
+          const load = simulatedLoad.get(server.id) ?? { occupiedHours: 0, shiftCount: 0 };
+          simulatedLoad.set(server.id, { occupiedHours: load.occupiedHours + hoursBetween(slot.start, slot.end), shiftCount: load.shiftCount + 1 });
+        });
+      });
+  });
+
+  return netBySlot;
+}
+
 function coverageRows(data: SchedulePayload) {
   const activeServers = data.servers.filter((server) => server.active);
+  const net20BySlot = simulatedNetFullBySlot(data, 20);
+  const net18BySlot = simulatedNetFullBySlot(data, 18);
   return data.days.flatMap((day) => data.slots
     .filter((slot) => slot.dayId === day.id)
     .map((slot, index) => {
       const metrics = activeServers.reduce((counts, server) => {
         const fit = slotAvailabilityFit(server, slot);
-        if (fit === "full") counts.full += 1;
+        if (fit === "full") counts.grossFull += 1;
         if (fit === "arrives-after" || fit === "partial-both") counts.arrivesAfter += 1;
         if (fit === "leaves-before" || fit === "partial-both") counts.leavesBefore += 1;
         return counts;
-      }, { full: 0, arrivesAfter: 0, leavesBefore: 0 });
-      return { day, slot, turn: index + 1, status: coverageStatus(metrics.full), ...metrics };
+      }, { grossFull: 0, arrivesAfter: 0, leavesBefore: 0 });
+      const net20 = net20BySlot.get(slot.id) ?? metrics.grossFull;
+      const net18 = net18BySlot.get(slot.id) ?? metrics.grossFull;
+      return { day, slot, turn: index + 1, net20, net18, status20: coverageStatus(net20, 20), status18: coverageStatus(net18, 18), ...metrics };
     }));
 }
 
@@ -659,20 +718,23 @@ function ServersAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (bo
       {coverageOpen ? (
         <div className="modal-backdrop" onClick={() => setCoverageOpen(false)}>
           <section className="coverage-report coverage-report-modal" aria-label="Reporte de cobertura por turno" onClick={(event) => event.stopPropagation()}>
-            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Servidores activos con disponibilidad completa por día y turno.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
+            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">
-              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full</span><span>Llegan después</span><span>Se van antes</span><span>Estado</span></div>
+              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full bruto</span><span>Neto 20</span><span>Estado 20</span><span>Neto 18</span><span>Estado 18</span><span>Llegan dps.</span><span>Se van ant.</span></div>
               {coverage.map((row) => (
                 <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
                   <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
                   <span>Turno {row.turn}</span>
                   <span>{row.slot.start} - {row.slot.end}</span>
-                  <strong>{row.full}</strong>
+                  <strong>{row.grossFull}</strong>
+                  <strong>{row.net20}</strong>
+                  <span className={"coverage-status " + row.status20.tone}>{row.status20.label}</span>
+                  <strong>{row.net18}</strong>
+                  <span className={"coverage-status " + row.status18.tone}>{row.status18.label}</span>
                   <span>{row.arrivesAfter}</span>
                   <span>{row.leavesBefore}</span>
-                  <span className={"coverage-status " + row.status.tone}>{row.status.label}</span>
                 </div>
               ))}
             </div>

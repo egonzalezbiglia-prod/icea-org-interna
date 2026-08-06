@@ -980,7 +980,7 @@ h3 {
 }
 
 .coverage-report-modal {
-  width: min(1080px, 100%);
+  width: min(1240px, 100%);
   max-height: min(760px, 92vh);
   overflow: auto;
   background: var(--surface);
@@ -1030,8 +1030,8 @@ h3 {
 
 .coverage-table .admin-table-head,
 .coverage-row {
-  grid-template-columns: minmax(96px, 0.8fr) 82px 112px 64px minmax(118px, 1fr) minmax(108px, 1fr) 92px;
-  min-width: 820px;
+  grid-template-columns: 86px 76px 104px 84px 76px 86px 76px 86px 104px 94px;
+  min-width: 990px;
 }
 
 .coverage-row {

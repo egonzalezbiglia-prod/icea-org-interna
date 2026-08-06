@@ -239,8 +239,11 @@ async function copiarHorariosPng(data: SchedulePayload) {
 
 async function copiarReporteCoberturaPng(data: SchedulePayload) {
   const rows = coverageRows(data);
-  const ancho = 1280;
   const margen = 56;
+  const paddingTabla = 22;
+  const colWidths = [94, 76, 112, 92, 82, 94, 82, 94, 102, 96];
+  const anchoTabla = colWidths.reduce((sum, width) => sum + width, 0) + paddingTabla * 2;
+  const ancho = anchoTabla + margen * 2;
   const altoFila = 44;
   const alto = Math.max(760, 390 + rows.length * altoFila);
   const canvas = document.createElement("canvas");
@@ -269,9 +272,8 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
 
   const tableX = margen;
   const tableY = 218;
-  const colWidths = [94, 76, 112, 92, 82, 94, 82, 94, 116, 100];
   const headers = ["Día", "Turno", "Horario", "Full bruto", "Neto 20", "Estado 20", "Neto 18", "Estado 18", "Llegan dps.", "Se van ant."];
-  redondearRect(ctx, tableX, tableY, ancho - margen * 2, 50, 18);
+  redondearRect(ctx, tableX, tableY, anchoTabla, 50, 18);
   ctx.fillStyle = "#d8ff6a";
   ctx.fill();
   ctx.fillStyle = "#10241d";
@@ -284,7 +286,7 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
 
   rows.forEach((row, rowIndex) => {
     const y = tableY + 62 + rowIndex * altoFila;
-    redondearRect(ctx, tableX, y, ancho - margen * 2, 36, 12);
+    redondearRect(ctx, tableX, y, anchoTabla, 36, 12);
     ctx.fillStyle = rowIndex % 2 === 0 ? "rgba(255, 255, 255, 0.94)" : "rgba(255, 255, 255, 0.86)";
     ctx.fill();
     const values = [
@@ -301,7 +303,7 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
     ];
     ctx.fillStyle = "#10241d";
     ctx.font = "800 16px Arial, sans-serif";
-    let cellX = tableX + 22;
+    let cellX = tableX + paddingTabla;
     values.forEach((value, index) => {
       ctx.fillText(value, cellX, y + 24);
       cellX += colWidths[index];
@@ -317,7 +319,7 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       { status: row.status20, index: 5 },
       { status: row.status18, index: 7 },
     ].forEach(({ status, index }) => {
-      const statusX = tableX + 22 + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
+      const statusX = tableX + paddingTabla + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
       const [bg, fg] = tones[status.tone] ?? tones.critical;
       redondearRect(ctx, statusX, y + 5, 78, 26, 13);
       ctx.fillStyle = bg;

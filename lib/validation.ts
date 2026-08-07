@@ -31,12 +31,19 @@ export const planSchema = z.object({
   editKey: z.string().optional(),
 });
 
-const slotSchema = z.object({
-  id: z.string().optional(),
-  dayId: z.string().refine((value) => dayIds.has(value as DayId), "Dia invalido").transform((value) => value as DayId),
-  start: timeSchema,
-  end: timeSchema,
-});
+const slotSchema = z
+  .object({
+    id: z.string().optional(),
+    dayId: z.string().refine((value) => dayIds.has(value as DayId), "Dia invalido").transform((value) => value as DayId),
+    start: timeSchema,
+    end: timeSchema,
+    idealCoverage: z.number().int().min(1).max(200).optional(),
+    minimumCoverage: z.number().int().min(1).max(200).optional(),
+  })
+  .refine((slot) => !slot.idealCoverage || !slot.minimumCoverage || slot.minimumCoverage <= slot.idealCoverage, {
+    message: "El minimo no puede superar el ideal",
+    path: ["minimumCoverage"],
+  });
 
 const positionSchema = z.object({
   id: z.number().int().positive().optional(),

@@ -34,6 +34,8 @@ export type Slot = {
   start: string;
   end: string;
   label: string;
+  idealCoverage?: number;
+  minimumCoverage?: number;
 };
 
 export type Position = {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, BarChart3, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { COUNTRIES, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
+import { COUNTRIES, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -24,8 +24,6 @@ type ImportedServer = {
 
 type CellValue = string | number | boolean | null | undefined;
 
-const COVERAGE_IDEAL_TARGET = 40;
-const COVERAGE_MINIMUM_TARGET = 30;
 const COVERAGE_COMPOSITION = [
   { position: "Auditorio", ideal: 20, minimum: 18 },
   { position: "Escalera", ideal: 8, minimum: 6 },
@@ -251,9 +249,9 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
   const rows = coverageRows(data);
   const margen = 56;
   const paddingTabla = 22;
-  const colWidths = [104, 86, 124, 98, 86, 98, 86, 98, 126, 118];
+  const colWidths = [94, 84, 128, 62, 58, 94, 100, 126, 92, 118, 112, 104];
   const anchoTabla = colWidths.reduce((sum, width) => sum + width, 0) + paddingTabla * 2;
-  const ancho = Math.max(anchoTabla + margen * 2, 1180);
+  const ancho = Math.max(anchoTabla + margen * 2, 1380);
   const altoFila = 44;
   const alto = Math.max(760, 390 + rows.length * altoFila);
   const canvas = document.createElement("canvas");
@@ -308,12 +306,12 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
 
   const tableX = margen;
   const tableY = 236;
-  const headers = ["Día", "Turno", "Horario", "Full bruto", "Neto 40", "Estado 40", "Neto 30", "Estado 30", "Llegan dps.", "Se van ant."];
+  const headers = ["Día", "Turno", "Horario", "Ideal", "Mín.", "Full bruto", "Neto ideal", "Estado ideal", "Neto mín.", "Estado mín.", "Llegan dps.", "Se van ant."];
   redondearRect(ctx, tableX, tableY, anchoTabla, 50, 18);
   ctx.fillStyle = "#d8ff6a";
   ctx.fill();
   ctx.fillStyle = "#10241d";
-  ctx.font = "900 16px Arial, sans-serif";
+  ctx.font = "900 15px Arial, sans-serif";
   let x = tableX + 22;
   headers.forEach((header, index) => {
     ctx.fillText(header, x, tableY + 32);
@@ -329,6 +327,8 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       etiquetaDia(row.day.id, row.day.label),
       `Turno ${row.turn}`,
       `${row.slot.start} - ${row.slot.end}`,
+      String(row.idealTarget),
+      String(row.minimumTarget),
       String(row.grossFull),
       String(row.idealNet),
       "",
@@ -352,8 +352,8 @@ async function copiarReporteCoberturaPng(data: SchedulePayload) {
       critical: ["#f8b8b8", "#7e1717"],
     } as Record<string, [string, string]>;
     [
-      { status: row.idealStatus, index: 5 },
-      { status: row.minimumStatus, index: 7 },
+      { status: row.idealStatus, index: 7 },
+      { status: row.minimumStatus, index: 9 },
     ].forEach(({ status, index }) => {
       const statusX = tableX + paddingTabla + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
       const [bg, fg] = tones[status.tone] ?? tones.critical;
@@ -442,17 +442,25 @@ function slotAvailabilityFit(server: Server, slot: Slot) {
   return "none";
 }
 
-function idealCoverageStatus(full: number) {
-  if (full >= 36) return { label: "Ok", tone: "ok" };
-  if (full >= 30) return { label: "Leve", tone: "mild" };
-  if (full >= 26) return { label: "Grave", tone: "serious" };
+function slotIdealTarget(slot: Slot) {
+  return Number(slot.idealCoverage ?? DEFAULT_IDEAL_COVERAGE);
+}
+
+function slotMinimumTarget(slot: Slot) {
+  return Number(slot.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE);
+}
+
+function idealCoverageStatus(full: number, idealTarget: number, minimumTarget: number) {
+  if (full >= Math.ceil(idealTarget * 0.9)) return { label: "Ok", tone: "ok" };
+  if (full >= minimumTarget) return { label: "Leve", tone: "mild" };
+  if (full >= Math.max(1, minimumTarget - 4)) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 
-function minimumCoverageStatus(full: number) {
-  if (full >= 30) return { label: "Ok", tone: "ok" };
-  if (full >= 28) return { label: "Leve", tone: "mild" };
-  if (full >= 24) return { label: "Grave", tone: "serious" };
+function minimumCoverageStatus(full: number, minimumTarget: number) {
+  if (full >= minimumTarget) return { label: "Ok", tone: "ok" };
+  if (full >= Math.max(1, minimumTarget - 2)) return { label: "Leve", tone: "mild" };
+  if (full >= Math.max(1, minimumTarget - 6)) return { label: "Grave", tone: "serious" };
   return { label: "Crítico", tone: "critical" };
 }
 
@@ -462,7 +470,7 @@ function isFullAvailable(server: Server, slot: Slot) {
   return server.availability.some((range) => range.dayId === slot.dayId && minutesFromTime(range.start) <= slotStart && minutesFromTime(range.end) >= slotEnd);
 }
 
-function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
+function simulatedNetFullBySlot(data: SchedulePayload, targetForSlot: (slot: Slot) => number) {
   const activeServers = data.servers.filter((server) => server.active);
   const simulatedLoad = new Map(activeServers.map((server) => [server.id, { occupiedHours: 0, shiftCount: 0 }]));
   const netBySlot = new Map<string, number>();
@@ -488,7 +496,7 @@ function simulatedNetFullBySlot(data: SchedulePayload, targetFull: number) {
             if (loadA.shiftCount !== loadB.shiftCount) return loadA.shiftCount - loadB.shiftCount;
             return a.fullName.localeCompare(b.fullName, "es");
           })
-          .slice(0, targetFull);
+          .slice(0, targetForSlot(slot));
         assignmentsBySlot.set(slot.id, chosen);
         const chosenIds = new Set(chosen.map((server) => server.id));
         activeServers.forEach((server) => {
@@ -508,8 +516,11 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
   const XLSX = await import("xlsx");
   const workbook = XLSX.utils.book_new();
 
-  [COVERAGE_IDEAL_TARGET, COVERAGE_MINIMUM_TARGET].forEach((targetFull) => {
-    const simulation = simulatedNetFullBySlot(data, targetFull);
+  [
+    { label: "Objetivo ideal", targetForSlot: slotIdealTarget },
+    { label: "Objetivo mínimo", targetForSlot: slotMinimumTarget },
+  ].forEach(({ label, targetForSlot }) => {
+    const simulation = simulatedNetFullBySlot(data, targetForSlot);
     const assignedCountByServerDay = new Map<string, number>();
     simulation.assignmentsBySlot.forEach((servers, slotId) => {
       const slot = data.slots.find((item) => item.id === slotId);
@@ -520,7 +531,7 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
       });
     });
     const rows = [
-      ["Día", "Turno", "Horario", "Orden", "Servidor", "WhatsApp", "Disponibilidad del día", "Turnos completos totales", "Turnos asignados", "% cobertura persona"],
+      ["Día", "Turno", "Horario", "Objetivo turno", "Orden", "Servidor", "WhatsApp", "Disponibilidad del día", "Turnos completos totales", "Turnos asignados", "% cobertura persona"],
       ...data.days.flatMap((day) => data.slots
         .filter((slot) => slot.dayId === day.id)
         .flatMap((slot, slotIndex) => {
@@ -533,6 +544,7 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
               etiquetaDia(day.id, day.label),
               `Turno ${slotIndex + 1}`,
               `${slot.start} - ${slot.end}`,
+              targetForSlot(slot),
               serverIndex + 1,
               server.fullName,
               server.whatsapp,
@@ -545,8 +557,8 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
         })),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    worksheet["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 30 }, { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 20 }];
-    XLSX.utils.book_append_sheet(workbook, worksheet, `Objetivo ${targetFull}`);
+    worksheet["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 8 }, { wch: 30 }, { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, label);
   });
 
   XLSX.writeFile(workbook, "sugerencia-asignacion-servidores.xlsx");
@@ -554,8 +566,8 @@ async function downloadCoverageSuggestion(data: SchedulePayload) {
 
 function coverageRows(data: SchedulePayload) {
   const activeServers = data.servers.filter((server) => server.active);
-  const idealNetBySlot = simulatedNetFullBySlot(data, COVERAGE_IDEAL_TARGET).netBySlot;
-  const minimumNetBySlot = simulatedNetFullBySlot(data, COVERAGE_MINIMUM_TARGET).netBySlot;
+  const idealNetBySlot = simulatedNetFullBySlot(data, slotIdealTarget).netBySlot;
+  const minimumNetBySlot = simulatedNetFullBySlot(data, slotMinimumTarget).netBySlot;
   return data.days.flatMap((day) => data.slots
     .filter((slot) => slot.dayId === day.id)
     .map((slot, index) => {
@@ -566,9 +578,11 @@ function coverageRows(data: SchedulePayload) {
         if (fit === "leaves-before" || fit === "partial-both") counts.leavesBefore += 1;
         return counts;
       }, { grossFull: 0, arrivesAfter: 0, leavesBefore: 0 });
+      const idealTarget = slotIdealTarget(slot);
+      const minimumTarget = slotMinimumTarget(slot);
       const idealNet = idealNetBySlot.get(slot.id) ?? metrics.grossFull;
       const minimumNet = minimumNetBySlot.get(slot.id) ?? metrics.grossFull;
-      return { day, slot, turn: index + 1, idealNet, minimumNet, idealStatus: idealCoverageStatus(idealNet), minimumStatus: minimumCoverageStatus(minimumNet), ...metrics };
+      return { day, slot, turn: index + 1, idealTarget, minimumTarget, idealNet, minimumNet, idealStatus: idealCoverageStatus(idealNet, idealTarget, minimumTarget), minimumStatus: minimumCoverageStatus(minimumNet, minimumTarget), ...metrics };
     }));
 }
 
@@ -839,7 +853,7 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
     setCoverageCopyMessage("");
     try {
       await downloadCoverageSuggestion(coverageSource);
-      setCoverageCopyMessage("Sugerencia descargada con objetivos 40 y 30.");
+      setCoverageCopyMessage("Sugerencia descargada con objetivos por turno.");
     } catch (error) {
       setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo descargar la sugerencia.");
     } finally {
@@ -862,12 +876,14 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">
-              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Full bruto</span><span>Neto 40</span><span>Estado 40</span><span>Neto 30</span><span>Estado 30</span><span>Llegan dps.</span><span>Se van ant.</span></div>
+              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Ideal</span><span>Mín.</span><span>Full bruto</span><span>Neto ideal</span><span>Estado ideal</span><span>Neto mín.</span><span>Estado mín.</span><span>Llegan dps.</span><span>Se van ant.</span></div>
               {coverage.map((row) => (
                 <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
                   <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
                   <span>Turno {row.turn}</span>
                   <span>{row.slot.start} - {row.slot.end}</span>
+                  <strong>{row.idealTarget}</strong>
+                  <strong>{row.minimumTarget}</strong>
                   <strong>{row.grossFull}</strong>
                   <strong>{row.idealNet}</strong>
                   <span className={"coverage-status " + row.idealStatus.tone}>{row.idealStatus.label}</span>
@@ -934,7 +950,17 @@ function SlotsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    await onMutate({ type: "upsertSlot", slot: { id: slot?.id, dayId: String(form.get("dayId") ?? slot?.dayId), start: String(form.get("start") ?? slot?.start), end: String(form.get("end") ?? slot?.end) } });
+    await onMutate({
+      type: "upsertSlot",
+      slot: {
+        id: slot?.id,
+        dayId: String(form.get("dayId") ?? slot?.dayId),
+        start: String(form.get("start") ?? slot?.start),
+        end: String(form.get("end") ?? slot?.end),
+        idealCoverage: Number(form.get("idealCoverage") ?? slot?.idealCoverage ?? DEFAULT_IDEAL_COVERAGE),
+        minimumCoverage: Number(form.get("minimumCoverage") ?? slot?.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE),
+      },
+    });
     if (!slot) {
       formElement.reset();
       setNewSlotOpen(false);
@@ -956,11 +982,11 @@ function SlotsAdmin({ data, onMutate }: { data: SchedulePayload; onMutate: (body
       <div className="admin-card-head"><div><h3>Horarios</h3><span>{data.slots.length} turnos</span></div><div className="admin-card-actions"><button className="ghost-button" type="button" onClick={() => void copySlotsImage()}><Copy size={16} />Copiar imagen</button><button className="primary-button" type="button" onClick={() => setNewSlotOpen((open) => !open)}><Plus size={16} />Nuevo</button></div></div>
       {copyMessage ? <p className="import-note">{copyMessage}</p> : null}
       {newSlotOpen ? (
-        <form className="admin-new-form slot-new-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><button className="primary-button" type="submit">Guardar horario</button></form>
+        <form className="admin-new-form slot-new-form" onSubmit={(event) => saveSlot(event)}><select name="dayId" defaultValue={data.days[0]?.id}>{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue="08:00" /><input name="end" type="time" defaultValue="10:00" /><input name="idealCoverage" type="number" min="1" max="200" defaultValue={DEFAULT_IDEAL_COVERAGE} aria-label="Ideal cobertura" /><input name="minimumCoverage" type="number" min="1" max="200" defaultValue={DEFAULT_MINIMUM_COVERAGE} aria-label="Minimo cobertura" /><button className="primary-button" type="submit">Guardar horario</button></form>
       ) : null}
       <div className="admin-table slots-table">
-        <div className="admin-table-head"><span>Dia</span><span>Inicio</span><span>Fin</span><span>Acciones</span></div>
-        {data.slots.map((slot) => <form className="admin-table-row slot-data-row" key={slot.id} onSubmit={(event) => saveSlot(event, slot)}><select name="dayId" defaultValue={slot.dayId} aria-label="Dia">{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue={slot.start} aria-label="Inicio" /><input name="end" type="time" defaultValue={slot.end} aria-label="Fin" /><div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete("el horario " + slot.label) && onMutate({ type: "deleteSlot", slotId: slot.id })} aria-label="Eliminar horario"><Trash2 size={16} /></button></div></form>)}
+        <div className="admin-table-head"><span>Dia</span><span>Inicio</span><span>Fin</span><span>Ideal</span><span>Mín.</span><span>Acciones</span></div>
+        {data.slots.map((slot) => <form className="admin-table-row slot-data-row" key={slot.id} onSubmit={(event) => saveSlot(event, slot)}><select name="dayId" defaultValue={slot.dayId} aria-label="Dia">{data.days.map((day) => <option key={day.id} value={day.id}>{day.label}</option>)}</select><input name="start" type="time" defaultValue={slot.start} aria-label="Inicio" /><input name="end" type="time" defaultValue={slot.end} aria-label="Fin" /><input name="idealCoverage" type="number" min="1" max="200" defaultValue={slotIdealTarget(slot)} aria-label="Ideal cobertura" /><input name="minimumCoverage" type="number" min="1" max="200" defaultValue={slotMinimumTarget(slot)} aria-label="Minimo cobertura" /><div className="row-actions"><button className="ghost-button" type="submit">Guardar</button><button className="icon-danger" type="button" onClick={() => confirmDelete("el horario " + slot.label) && onMutate({ type: "deleteSlot", slotId: slot.id })} aria-label="Eliminar horario"><Trash2 size={16} /></button></div></form>)}
       </div>
     </section>
   );

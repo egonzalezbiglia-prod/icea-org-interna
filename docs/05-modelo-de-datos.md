@@ -71,6 +71,8 @@ Campos:
 - `start`
 - `end`
 - `label`
+- `idealCoverage`
+- `minimumCoverage`
 
 ### `Position`
 

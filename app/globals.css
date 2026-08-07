@@ -915,7 +915,7 @@ h3 {
 }
 
 .slot-new-form {
-  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.7fr) minmax(110px, 0.7fr) auto;
+  grid-template-columns: minmax(130px, 1fr) minmax(104px, 0.65fr) minmax(104px, 0.65fr) 82px 82px auto;
   align-items: center;
 }
 
@@ -963,7 +963,7 @@ h3 {
 
 .slots-table .admin-table-head,
 .slot-data-row {
-  grid-template-columns: minmax(120px, 1fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) 132px;
+  grid-template-columns: minmax(120px, 1fr) minmax(100px, 0.75fr) minmax(100px, 0.75fr) 76px 76px 132px;
 }
 
 .positions-table .admin-table-head,
@@ -1030,8 +1030,8 @@ h3 {
 
 .coverage-table .admin-table-head,
 .coverage-row {
-  grid-template-columns: 86px 76px 104px 84px 76px 86px 76px 86px 104px 94px;
-  min-width: 990px;
+  grid-template-columns: 86px 76px 104px 58px 58px 84px 86px 96px 76px 92px 104px 94px;
+  min-width: 1114px;
 }
 
 .coverage-row {
@@ -1341,7 +1341,7 @@ h3 {
   }
 
   .slot-data-row {
-    grid-template-columns: minmax(104px, 0.95fr) minmax(82px, 1fr) minmax(82px, 1fr);
+    grid-template-columns: minmax(104px, 0.95fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(72px, 0.8fr) minmax(72px, 0.8fr);
     gap: 0.55rem;
   }
 
@@ -1354,7 +1354,7 @@ h3 {
   }
 
   .slot-data-row .row-actions {
-    grid-column: 2 / -1;
+    grid-column: 1 / -1;
     justify-content: flex-end;
   }
 

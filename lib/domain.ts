@@ -6,6 +6,9 @@ export const DAYS: Day[] = [
   { id: "sabado", label: "Sabado" },
 ];
 
+export const DEFAULT_IDEAL_COVERAGE = 40;
+export const DEFAULT_MINIMUM_COVERAGE = 30;
+
 const DEFAULT_TIMES_BY_DAY: Record<DayId, [string, string][]> = {
   jueves: [
     ["13:00", "15:00"],
@@ -38,6 +41,8 @@ export const SLOTS: Slot[] = DAYS.flatMap((day) =>
     start,
     end,
     label: `${start} - ${end}`,
+    idealCoverage: DEFAULT_IDEAL_COVERAGE,
+    minimumCoverage: DEFAULT_MINIMUM_COVERAGE,
   })),
 );
 

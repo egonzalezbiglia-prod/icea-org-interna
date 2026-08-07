@@ -1,5 +1,5 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from "firebase-admin/firestore";
-import { COUNTRIES, DAYS, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, cleanPhone, normalizeSearch, slugifyTeamId } from "@/lib/domain";
+import { COUNTRIES, DAYS, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, cleanPhone, normalizeSearch, slugifyTeamId } from "@/lib/domain";
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
 import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
 
@@ -73,6 +73,8 @@ function slotFromDoc(doc: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot
     start: data.start,
     end: data.end,
     label: data.label ?? `${data.start} - ${data.end}`,
+    idealCoverage: Number(data.idealCoverage ?? DEFAULT_IDEAL_COVERAGE),
+    minimumCoverage: Number(data.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE),
   };
 }
 
@@ -257,10 +259,18 @@ export async function updatePlan(teamId: string, input: { imageUrl: string | nul
   return getPlan(teamId);
 }
 
-export async function upsertSlot(teamId: string, input: { id?: string; dayId: DayId; start: string; end: string }) {
+export async function upsertSlot(teamId: string, input: { id?: string; dayId: DayId; start: string; end: string; idealCoverage?: number; minimumCoverage?: number }) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
   const id = input.id || `${input.dayId}-${input.start.replace(":", "")}`;
-  const slot: Slot = { id, dayId: input.dayId, start: input.start, end: input.end, label: `${input.start} - ${input.end}` };
+  const slot: Slot = {
+    id,
+    dayId: input.dayId,
+    start: input.start,
+    end: input.end,
+    label: `${input.start} - ${input.end}`,
+    idealCoverage: input.idealCoverage ?? DEFAULT_IDEAL_COVERAGE,
+    minimumCoverage: input.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE,
+  };
   await teamCollection(teamId, "slots").doc(id).set(slot, { merge: true });
   return slot;
 }

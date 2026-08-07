@@ -276,6 +276,12 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!message) return undefined;
+    const timeout = window.setTimeout(() => setMessage(""), 2_600);
+    return () => window.clearTimeout(timeout);
+  }, [message]);
+
   async function refresh() {
     setMessage("");
     try {
@@ -378,7 +384,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
           <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar servidor por nombre" />{query ? <button type="button" aria-label="Limpiar busqueda" onClick={() => setQuery("")}><X size={16} /></button> : null}</label>
         </section>
 
-        {message ? <section className="edit-strip"><p>{message}</p></section> : null}
+        {message ? <div className="app-toast" role="status" aria-live="polite"><span className="app-toast-icon">✓</span><strong>{message}</strong></div> : null}
 
         {search ? (
           <section className="person-results">

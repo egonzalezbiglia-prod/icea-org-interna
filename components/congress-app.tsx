@@ -10,6 +10,8 @@ import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/typ
 
 const ADMIN_KEY = "1icea2026";
 const ADMIN_SESSION_KEY = "icea-admin-ok";
+const MAX_PLAN_IMAGE_CHARS = 850_000;
+const PLAN_IMAGE_SIZES = [1800, 1500, 1200, 950, 760];
 
 type AvailabilityFit = "complete" | "partial-before" | "partial-after" | "partial-both" | "none";
 
@@ -111,6 +113,42 @@ function runLengthFor(serverId: string, candidate: Slot, assignments: Assignment
 
 function serverAlreadyInSlot(serverId: string, slotId: string, assignments: Assignment[], currentAssignmentId: string, preventSameSlotDuplicate: boolean) {
   return preventSameSlotDuplicate && assignments.some((assignment) => assignment.id !== currentAssignmentId && assignment.slotId === slotId && assignment.serverId === serverId);
+}
+
+function fileToImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer el PNG."));
+    };
+    image.src = url;
+  });
+}
+
+async function pngFileToDataUrl(file: File) {
+  if (file.type !== "image/png") throw new Error("El plano tiene que ser un archivo PNG.");
+  const image = await fileToImage(file);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No se pudo preparar el PNG.");
+
+  for (const maxSize of PLAN_IMAGE_SIZES) {
+    const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/png");
+    if (dataUrl.length <= MAX_PLAN_IMAGE_CHARS) return dataUrl;
+  }
+
+  throw new Error("El PNG es demasiado pesado. Probá exportarlo con menos resolución.");
 }
 
 function optionsForCell(data: SchedulePayload, slot: Slot, currentAssignmentId: string): ServerOption[] {
@@ -281,7 +319,9 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   async function savePlan(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    await mutatePlan(String(formData.get("imageUrl") ?? ""), String(formData.get("note") ?? ""));
+    const file = formData.get("planFile");
+    const imageUrl = file instanceof File && file.size > 0 ? await pngFileToDataUrl(file) : data.plan.imageUrl ?? "";
+    await mutatePlan(imageUrl, String(formData.get("note") ?? ""));
   }
 
   async function mutatePlan(imageUrl: string, note: string) {
@@ -476,9 +516,9 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         <div className="modal-backdrop" onClick={() => setPlanOpen(false)}>
           <section className="modal" onClick={(event) => event.stopPropagation()}>
             <header><h2>Plano del salon principal</h2><button onClick={() => setPlanOpen(false)} aria-label="Cerrar plano"><X size={18} /></button></header>
-            {data.plan.imageUrl ? <img className="plan-image" src={data.plan.imageUrl} alt="Plano de posiciones" /> : <div className="plan-placeholder"><ImageIcon size={34} /><p>Cuando este listo, pega aqui el enlace publico de la imagen del plano.</p></div>}
+            {data.plan.imageUrl ? <img className="plan-image" src={data.plan.imageUrl} alt="Plano de posiciones" /> : <div className="plan-placeholder"><ImageIcon size={34} /><p>Subí un PNG del plano desde tu escritorio para verlo acá.</p></div>}
             {data.plan.note ? <p className="plan-note">{data.plan.note}</p> : null}
-            {isAdmin ? <form className="plan-form" onSubmit={savePlan}><input name="imageUrl" defaultValue={data.plan.imageUrl ?? ""} placeholder="URL publica de la imagen del plano" /><textarea name="note" defaultValue={data.plan.note ?? ""} placeholder="Nota visible junto al plano" /><button className="primary-button" type="submit">Guardar plano</button></form> : null}
+            {isAdmin ? <form className="plan-form" onSubmit={savePlan}><label className="plan-file-field"><span>PNG del plano</span><input name="planFile" type="file" accept="image/png" /></label><textarea name="note" defaultValue={data.plan.note ?? ""} placeholder="Nota visible junto al plano" /><button className="primary-button" type="submit">Guardar plano</button></form> : null}
           </section>
         </div>
       ) : null}

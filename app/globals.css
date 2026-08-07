@@ -696,6 +696,22 @@ h3 {
   border-top: 1px solid var(--line);
 }
 
+.plan-file-field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.plan-file-field input {
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .plan-form textarea {
   min-height: 84px;
   resize: vertical;

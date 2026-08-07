@@ -6,6 +6,7 @@ const dayIds = new Set(DAYS.map((day) => day.id));
 const countryCodes = new Set(COUNTRIES.map((country) => country.code));
 const timeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Usa formato HH:MM");
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Usa formato YYYY-MM-DD");
+const imageDataUrlSchema = z.string().regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/, "Sube un PNG valido").max(900_000, "El PNG es demasiado pesado");
 
 export const assignmentSchema = z
   .object({
@@ -26,7 +27,7 @@ export const assignmentSchema = z
   }));
 
 export const planSchema = z.object({
-  imageUrl: z.string().url().nullable().or(z.literal("")).transform((value) => value || null),
+  imageUrl: z.string().url().or(imageDataUrlSchema).nullable().or(z.literal("")).transform((value) => value || null),
   note: z.string().max(500).nullable().optional().transform((value) => value || null),
   editKey: z.string().optional(),
 });

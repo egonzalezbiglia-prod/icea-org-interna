@@ -357,7 +357,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
               <>
                 <button className="menu-backdrop" aria-hidden="true" tabIndex={-1} onClick={() => setMenuOpen(false)} />
                 <div className="menu-pop" role="menu">
-                  <Link className="menu-item" href="/" role="menuitem" onClick={() => setMenuOpen(false)}><Home size={16} />Inicio</Link>
+                  {isAdmin ? <Link className="menu-item" href="/" role="menuitem" onClick={() => setMenuOpen(false)}><Home size={16} />Inicio</Link> : null}
                   <div className="menu-item menu-item-theme">
                     <span>Tema</span>
                     <ThemeToggle />

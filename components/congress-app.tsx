@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, X } from "lucide-react";
+import { Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { assignmentId, fechaCortaDia, hoursBetween, minutesFromTime, normalizeSearch, slotEnCurso } from "@/lib/domain";
 import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -192,6 +192,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   const [message, setMessage] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [clearingSlotId, setClearingSlotId] = useState<string | null>(null);
 
   const isAdmin = adminKey === ADMIN_KEY;
   const assignments = useMemo(() => assignmentMap(data.assignments), [data.assignments]);
@@ -319,6 +320,35 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       setMessage(error instanceof Error ? error.message : "No se pudo guardar.");
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function clearSlot(slot: Slot) {
+    if (!isAdmin || clearingSlotId) return;
+    const assignedPositions = positions.filter((position) => assignments.get(assignmentId(activeDay, slot.id, position.id))?.serverId);
+    if (!assignedPositions.length) {
+      setMessage("El turno ya está vacío.");
+      return;
+    }
+    const turn = turnoPorSlot(slot);
+    const label = `${labelDiaActivo} ${turn ? `Turno ${turn}` : slot.label}`;
+    if (!window.confirm(`Vaciar ${label}? Se desasignan ${assignedPositions.length} servidor${assignedPositions.length === 1 ? "" : "es"}.`)) return;
+    setClearingSlotId(slot.id);
+    setMessage("");
+    try {
+      await Promise.all(assignedPositions.map((position) => apiJson<{ assignment: Assignment | null }>("/api/schedule", {
+        method: "PATCH",
+        body: JSON.stringify({ teamId, dayId: activeDay, slotId: slot.id, positionId: position.id, serverId: null, editKey: adminKey }),
+      })));
+      setData((current) => ({
+        ...current,
+        assignments: current.assignments.filter((assignment) => !(assignment.dayId === activeDay && assignment.slotId === slot.id)),
+      }));
+      setMessage(`${label} vacío.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo vaciar el turno.");
+    } finally {
+      setClearingSlotId(null);
     }
   }
 
@@ -460,6 +490,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
                       </span>
                       <span className="slot-turn">Turno {index + 1}</span>
                     </span>
+                    {isAdmin ? <button className="clear-slot-button" type="button" disabled={clearingSlotId === slot.id} onClick={() => void clearSlot(slot)} title="Vaciar turno" aria-label={`Vaciar turno ${index + 1}`}><Trash2 size={13} /></button> : null}
                   </th>
                 ))}
               </tr>

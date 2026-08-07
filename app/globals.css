@@ -2259,6 +2259,7 @@ h3 {
 
 /* Cabecera de horarios tabulares + franja "ahora" */
 .schedule-grid thead th.time {
+  position: sticky;
   color: var(--ink);
   font-size: 0.95rem;
   font-weight: 700;
@@ -2301,6 +2302,31 @@ h3 {
   line-height: 1.1;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.clear-slot-button {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.45rem;
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--danger) 72%, var(--ink-dim));
+  background: color-mix(in srgb, var(--danger-soft) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.clear-slot-button:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.clear-slot-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .schedule-grid thead th.nowcol {

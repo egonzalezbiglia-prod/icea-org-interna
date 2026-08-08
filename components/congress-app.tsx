@@ -273,11 +273,6 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   }, [adminSessionKey]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => refresh().catch(() => undefined), 60_000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     if (!message) return undefined;
     const timeout = window.setTimeout(() => setMessage(""), 2_600);
     return () => window.clearTimeout(timeout);

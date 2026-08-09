@@ -4,14 +4,52 @@ import { DEFAULT_TEAM_ID } from "@/lib/domain";
 import { getSchedulePayload, upsertAssignment } from "@/lib/repositories";
 import { assignmentSchema } from "@/lib/validation";
 
+const SCHEDULE_CLIENT_HEADER = "x-icea-schedule-client";
+const SCHEDULE_CLIENT_VALUE = "schedule-ui";
+
 function teamIdFromRequest(request: Request, body?: Record<string, unknown>) {
   const url = new URL(request.url);
   const raw = body?.teamId ?? url.searchParams.get("teamId") ?? DEFAULT_TEAM_ID;
   return typeof raw === "string" && raw.trim() ? raw.trim() : DEFAULT_TEAM_ID;
 }
 
+function teamIdFromGetRequest(request: Request) {
+  const url = new URL(request.url);
+  const raw = url.searchParams.get("teamId");
+  return raw?.trim() || null;
+}
+
 export async function GET(request: Request) {
-  return NextResponse.json(await getSchedulePayload(teamIdFromRequest(request)));
+  if (request.headers.get(SCHEDULE_CLIENT_HEADER) !== SCHEDULE_CLIENT_VALUE) {
+    return NextResponse.json(
+      { error: "Cliente no autorizado" },
+      {
+        status: 403,
+        headers: {
+          "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
+    );
+  }
+
+  const teamId = teamIdFromGetRequest(request);
+  if (!teamId) {
+    return NextResponse.json(
+      { error: "teamId requerido" },
+      {
+        status: 400,
+        headers: {
+          "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
+    );
+  }
+
+  return NextResponse.json(await getSchedulePayload(teamId), {
+    headers: {
+      "cache-control": "public, s-maxage=60, stale-while-revalidate=300",
+    },
+  });
 }
 
 export async function PATCH(request: Request) {

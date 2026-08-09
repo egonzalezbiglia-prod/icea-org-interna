@@ -19,8 +19,22 @@ function teamIdFromGetRequest(request: Request) {
   return raw?.trim() || null;
 }
 
+function isAllowedScheduleClient(request: Request) {
+  if (request.headers.get(SCHEDULE_CLIENT_HEADER) === SCHEDULE_CLIENT_VALUE) return true;
+  if (request.headers.get("sec-fetch-site") === "same-origin") return true;
+
+  const referer = request.headers.get("referer");
+  if (!referer) return false;
+
+  try {
+    return new URL(referer).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
-  if (request.headers.get(SCHEDULE_CLIENT_HEADER) !== SCHEDULE_CLIENT_VALUE) {
+  if (!isAllowedScheduleClient(request)) {
     return NextResponse.json(
       { error: "Cliente no autorizado" },
       {

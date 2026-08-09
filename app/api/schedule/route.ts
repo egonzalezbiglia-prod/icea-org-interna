@@ -6,6 +6,7 @@ import { assignmentSchema } from "@/lib/validation";
 
 const SCHEDULE_CLIENT_HEADER = "x-icea-schedule-client";
 const SCHEDULE_CLIENT_VALUE = "schedule-ui";
+const SCHEDULE_CLIENT_COOKIE = "icea_schedule_client=1";
 
 function teamIdFromRequest(request: Request, body?: Record<string, unknown>) {
   const url = new URL(request.url);
@@ -21,16 +22,7 @@ function teamIdFromGetRequest(request: Request) {
 
 function isAllowedScheduleClient(request: Request) {
   if (request.headers.get(SCHEDULE_CLIENT_HEADER) === SCHEDULE_CLIENT_VALUE) return true;
-  if (request.headers.get("sec-fetch-site") === "same-origin") return true;
-
-  const referer = request.headers.get("referer");
-  if (!referer) return false;
-
-  try {
-    return new URL(referer).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
+  return request.headers.get("cookie")?.split(";").some((cookie) => cookie.trim() === SCHEDULE_CLIENT_COOKIE) ?? false;
 }
 
 export async function GET(request: Request) {

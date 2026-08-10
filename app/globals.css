@@ -1090,8 +1090,8 @@ h3 {
 
 .coverage-table .admin-table-head,
 .coverage-row {
-  grid-template-columns: 86px 76px 104px 58px 58px 84px 86px 96px 76px 92px 104px 94px;
-  min-width: 1114px;
+  grid-template-columns: 86px 76px 104px 58px 58px 84px 86px 96px 76px 92px 104px 94px 78px;
+  min-width: 1192px;
 }
 
 .coverage-row {

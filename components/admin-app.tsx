@@ -24,14 +24,6 @@ type ImportedServer = {
 
 type CellValue = string | number | boolean | null | undefined;
 
-const COVERAGE_COMPOSITION = [
-  { position: "Auditorio", ideal: 20, minimum: 18 },
-  { position: "Escalera", ideal: 8, minimum: 6 },
-  { position: "Ascensor", ideal: 4, minimum: 2 },
-  { position: "VIP", ideal: 2, minimum: 1 },
-  { position: "Accesos", ideal: 6, minimum: 4 },
-];
-
 function normalizeTimeToken(value: string) {
   const clean = value.trim().replace(/\./g, ":");
   if (/^\d{1,2}$/.test(clean)) return clean.padStart(2, "0") + ":00";
@@ -245,137 +237,6 @@ async function copiarHorariosPng(data: SchedulePayload) {
   await copiarBlobPng(blob);
 }
 
-async function copiarReporteCoberturaPng(data: SchedulePayload) {
-  const rows = coverageRows(data);
-  const margen = 56;
-  const paddingTabla = 22;
-  const colWidths = [94, 84, 128, 62, 58, 94, 100, 126, 92, 118, 112, 104];
-  const anchoTabla = colWidths.reduce((sum, width) => sum + width, 0) + paddingTabla * 2;
-  const ancho = Math.max(anchoTabla + margen * 2, 1380);
-  const altoFila = 44;
-  const alto = Math.max(760, 390 + rows.length * altoFila);
-  const canvas = document.createElement("canvas");
-  canvas.width = ancho;
-  canvas.height = alto;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("No se pudo preparar la imagen.");
-
-  ctx.fillStyle = "#f8fbf2";
-  ctx.fillRect(0, 0, ancho, alto);
-  const fondo = ctx.createLinearGradient(0, 0, ancho, alto);
-  fondo.addColorStop(0, "#123328");
-  fondo.addColorStop(1, "#214f3e");
-  ctx.fillStyle = fondo;
-  redondearRect(ctx, 28, 28, ancho - 56, alto - 56, 30);
-  ctx.fill();
-
-  ctx.fillStyle = "#f6f3e8";
-  ctx.font = "800 44px Georgia, serif";
-  ctx.fillText("Reporte de cobertura", margen, 96);
-  ctx.fillStyle = "rgba(246, 243, 232, 0.76)";
-  ctx.font = "700 17px Arial, sans-serif";
-  ctx.fillText(data.team.name.toUpperCase(), margen, 132);
-  ctx.font = "500 18px Arial, sans-serif";
-  ctx.fillText("Simulación por orden de sugerencia, sin superar turnos consecutivos por día.", margen, 166);
-
-  const compositionX = ancho - margen - 392;
-  const compositionY = 54;
-  const compositionRowHeight = 20;
-  redondearRect(ctx, compositionX, compositionY, 392, 168, 18);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(216, 255, 106, 0.22)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = "rgba(246, 243, 232, 0.82)";
-  ctx.font = "800 13px Arial, sans-serif";
-  ctx.fillText("Composición por puesto", compositionX + 18, compositionY + 26);
-  ctx.fillStyle = "rgba(216, 255, 106, 0.94)";
-  ctx.font = "900 12px Arial, sans-serif";
-  ctx.fillText("Puesto", compositionX + 18, compositionY + 52);
-  ctx.fillText("Ideal", compositionX + 238, compositionY + 52);
-  ctx.fillText("Mínimo", compositionX + 306, compositionY + 52);
-  ctx.fillStyle = "rgba(246, 243, 232, 0.82)";
-  ctx.font = "700 13px Arial, sans-serif";
-  COVERAGE_COMPOSITION.forEach((item, index) => {
-    const y = compositionY + 76 + index * compositionRowHeight;
-    ctx.fillText(item.position, compositionX + 18, y);
-    ctx.fillText(String(item.ideal), compositionX + 248, y);
-    ctx.fillText(String(item.minimum), compositionX + 322, y);
-  });
-
-  const tableX = margen;
-  const tableY = 236;
-  const headers = ["Día", "Turno", "Horario", "Ideal", "Mín.", "Full bruto", "Neto ideal", "Estado ideal", "Neto mín.", "Estado mín.", "Llegan dps.", "Se van ant."];
-  redondearRect(ctx, tableX, tableY, anchoTabla, 50, 18);
-  ctx.fillStyle = "#d8ff6a";
-  ctx.fill();
-  ctx.fillStyle = "#10241d";
-  ctx.font = "900 15px Arial, sans-serif";
-  let x = tableX + 22;
-  headers.forEach((header, index) => {
-    ctx.fillText(header, x, tableY + 32);
-    x += colWidths[index];
-  });
-
-  rows.forEach((row, rowIndex) => {
-    const y = tableY + 62 + rowIndex * altoFila;
-    redondearRect(ctx, tableX, y, anchoTabla, 36, 12);
-    ctx.fillStyle = rowIndex % 2 === 0 ? "rgba(255, 255, 255, 0.94)" : "rgba(255, 255, 255, 0.86)";
-    ctx.fill();
-    const values = [
-      etiquetaDia(row.day.id, row.day.label),
-      `Turno ${row.turn}`,
-      `${row.slot.start} - ${row.slot.end}`,
-      String(row.idealTarget),
-      String(row.minimumTarget),
-      String(row.grossFull),
-      String(row.idealNet),
-      "",
-      String(row.minimumNet),
-      "",
-      String(row.arrivesAfter),
-      String(row.leavesBefore),
-    ];
-    ctx.fillStyle = "#10241d";
-    ctx.font = "800 16px Arial, sans-serif";
-    let cellX = tableX + paddingTabla;
-    values.forEach((value, index) => {
-      ctx.fillText(value, cellX, y + 24);
-      cellX += colWidths[index];
-    });
-
-    const tones = {
-      ok: ["#d8f0e5", "#115331"],
-      mild: ["#fff1a6", "#5c4a00"],
-      serious: ["#ffd6c9", "#7f2d15"],
-      critical: ["#f8b8b8", "#7e1717"],
-    } as Record<string, [string, string]>;
-    [
-      { status: row.idealStatus, index: 7 },
-      { status: row.minimumStatus, index: 9 },
-    ].forEach(({ status, index }) => {
-      const statusX = tableX + paddingTabla + colWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
-      const [bg, fg] = tones[status.tone] ?? tones.critical;
-      redondearRect(ctx, statusX, y + 5, 78, 26, 13);
-      ctx.fillStyle = bg;
-      ctx.fill();
-      ctx.fillStyle = fg;
-      ctx.font = "900 14px Arial, sans-serif";
-      ctx.fillText(status.label, statusX + 14, y + 23);
-    });
-  });
-
-  ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
-  ctx.font = "700 22px Arial, sans-serif";
-  ctx.fillText("ICEA 2026", margen, alto - 64);
-
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
-  });
-  await copiarBlobPng(blob);
-}
-
 async function readServerImportFile(file: File): Promise<ImportedServer[]> {
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (extension === "xlsx" || extension === "xls") {
@@ -510,6 +371,37 @@ function simulatedNetFullBySlot(data: SchedulePayload, targetForSlot: (slot: Slo
   });
 
   return { netBySlot, assignmentsBySlot };
+}
+
+async function copiarTextoPortapapeles(texto: string) {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Este navegador no permite copiar texto al portapapeles.");
+  }
+  await navigator.clipboard.writeText(texto);
+}
+
+function nombrePosicionPersonalizado(position: Position) {
+  const name = position.name.trim();
+  if (!name || normalizeSearch(name) === `posicion ${position.id}`) return "";
+  return name;
+}
+
+function etiquetaServidorWhatsapp(server: Server) {
+  const telefono = cleanPhone(server.whatsapp);
+  return telefono ? `@${server.dialCode}${telefono}` : server.fullName;
+}
+
+function mensajeTurnoReporte(data: SchedulePayload, slot: Slot, turn: number) {
+  const servidores = simulatedNetFullBySlot(data, slotIdealTarget).assignmentsBySlot.get(slot.id) ?? [];
+  const posiciones = data.positions.map(nombrePosicionPersonalizado).filter(Boolean);
+  const lineasPosicion = posiciones
+    .map((positionName, index) => {
+      const server = servidores[index];
+      return server ? `*Posición:* ${positionName} - ${etiquetaServidorWhatsapp(server)}` : "";
+    })
+    .filter(Boolean);
+  if (!lineasPosicion.length) return "";
+  return [`*Turno:* ${turn}`, `*Hora:* ${slot.start} - ${slot.end}`, "", ...lineasPosicion].join("\n");
 }
 
 async function downloadCoverageSuggestion(data: SchedulePayload) {
@@ -824,13 +716,18 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
     setCreatingServer(false);
   }
 
-  async function copyCoverageImage() {
+  async function copyShiftMessage(slot: Slot, turn: number) {
     setCoverageCopyMessage("");
     try {
-      await copiarReporteCoberturaPng(coverageSource);
-      setCoverageCopyMessage("Reporte copiado. Ya podés pegarlo donde quieras compartirlo.");
+      const texto = mensajeTurnoReporte(coverageSource, slot, turn);
+      if (!texto) {
+        setCoverageCopyMessage("No hay posiciones con nombre y servidor sugerido para copiar en este turno.");
+        return;
+      }
+      await copiarTextoPortapapeles(texto);
+      setCoverageCopyMessage(`Mensaje del turno ${turn} copiado.`);
     } catch (error) {
-      setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo copiar el reporte.");
+      setCoverageCopyMessage(error instanceof Error ? error.message : "No se pudo copiar el mensaje.");
     }
   }
 
@@ -872,11 +769,11 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
       {coverageOpen ? (
         <div className="modal-backdrop" onClick={() => setCoverageOpen(false)}>
           <section className="coverage-report coverage-report-modal" aria-label="Reporte de cobertura por turno" onClick={(event) => event.stopPropagation()}>
-            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" disabled={refreshingCoverage} onClick={() => void refreshCoverage()}><RefreshCw size={16} />{refreshingCoverage ? "Actualizando" : "Actualizar info"}</button><button className="ghost-button" type="button" disabled={downloadingSuggestion} onClick={() => void downloadSuggestion()}><Download size={16} />{downloadingSuggestion ? "Descargando" : "Descargar sugerencia"}</button><button className="ghost-button" type="button" onClick={() => void copyCoverageImage()}><Copy size={16} />Copiar imagen</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
+            <div className="coverage-report-head"><div><h4>Reporte de cobertura</h4><span>Simulación por orden de sugerencia, sin superar turnos consecutivos por día.</span></div><div className="coverage-actions"><button className="ghost-button" type="button" disabled={refreshingCoverage} onClick={() => void refreshCoverage()}><RefreshCw size={16} />{refreshingCoverage ? "Actualizando" : "Actualizar info"}</button><button className="ghost-button" type="button" disabled={downloadingSuggestion} onClick={() => void downloadSuggestion()}><Download size={16} />{downloadingSuggestion ? "Descargando" : "Descargar sugerencia"}</button><button className="icon-button" type="button" onClick={() => setCoverageOpen(false)} aria-label="Cerrar reporte"><X size={17} /></button></div></div>
             <div className="coverage-legend"><span className="coverage-status ok">Ok</span><span className="coverage-status mild">Leve</span><span className="coverage-status serious">Grave</span><span className="coverage-status critical">Crítico</span></div>
             {coverageCopyMessage ? <p className="import-note">{coverageCopyMessage}</p> : null}
             <div className="admin-table coverage-table">
-              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Ideal</span><span>Mín.</span><span>Full bruto</span><span>Neto ideal</span><span>Estado ideal</span><span>Neto mín.</span><span>Estado mín.</span><span>Llegan dps.</span><span>Se van ant.</span></div>
+              <div className="admin-table-head"><span>Día</span><span>Turno</span><span>Horario</span><span>Ideal</span><span>Mín.</span><span>Full bruto</span><span>Neto ideal</span><span>Estado ideal</span><span>Neto mín.</span><span>Estado mín.</span><span>Llegan dps.</span><span>Se van ant.</span><span>Mensaje</span></div>
               {coverage.map((row) => (
                 <div className="admin-table-row coverage-row" key={`${row.day.id}-${row.slot.id}`}>
                   <strong>{etiquetaDia(row.day.id, row.day.label)}</strong>
@@ -891,6 +788,7 @@ function ServersAdmin({ data, onMutate, onRefresh }: { data: SchedulePayload; on
                   <span className={"coverage-status " + row.minimumStatus.tone}>{row.minimumStatus.label}</span>
                   <span>{row.arrivesAfter}</span>
                   <span>{row.leavesBefore}</span>
+                  <button className="ghost-icon-button" type="button" onClick={() => void copyShiftMessage(row.slot, row.turn)} aria-label={`Copiar mensaje del turno ${row.turn}`} title="Copiar mensaje"><Copy size={16} /></button>
                 </div>
               ))}
             </div>

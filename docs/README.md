@@ -1,41 +1,40 @@
 # Documentación del producto
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-08-10
 
-## Objetivo de esta documentación
+## Objetivo
 
-Esta carpeta define cómo funciona el producto, qué decisiones ya fueron tomadas y qué reglas deben respetarse al construir nuevas funcionalidades.
+Esta carpeta describe el comportamiento vigente de ICEA Org Interna: producto, roles, arquitectura, datos, reglas, flujos, seguridad y evolución esperada.
 
-No reemplaza a Git ni al código. Sirve como contrato de producto y referencia para trabajar con más precisión.
+No reemplaza al código ni a Git. Sirve como referencia operativa para cambiar el sistema sin perder contexto.
 
 ## Índice
 
-- `00-producto.md`: visión, problema, usuarios y alcance.
-- `01-spec-base.md`: plantilla para definir features o módulos nuevos.
-- `02-roles-y-permisos.md`: quiénes usan el sistema y qué puede hacer cada rol.
-- `03-arquitectura.md`: stack, rutas, servicios y estructura técnica.
-- `04-reglas-de-negocio.md`: reglas centrales que gobiernan el producto.
-- `05-modelo-de-datos.md`: entidades, campos y relaciones.
-- `06-ux-ui.md`: lineamientos visuales, tono e interacción.
-- `07-flujos-principales.md`: recorridos clave de usuario.
-- `08-seguridad-privacidad.md`: datos sensibles, permisos y riesgos.
-- `09-roadmap.md`: prioridades, pendientes y evolución.
-- `changelog.md`: cambios importantes por fecha.
+- `00-producto.md`: visión, usuarios, alcance y estado actual.
+- `01-spec-base.md`: especificación funcional vigente de la grilla de turnos.
+- `02-roles-y-permisos.md`: permisos, claves y rutas por rol.
+- `03-arquitectura.md`: stack, estructura, APIs, persistencia y configuración.
+- `04-reglas-de-negocio.md`: reglas de asignación, disponibilidad y cobertura.
+- `05-modelo-de-datos.md`: entidades, colecciones, defaults y migraciones.
+- `06-ux-ui.md`: lineamientos visuales, tono, temas y componentes.
+- `07-flujos-principales.md`: recorridos principales y checklist manual.
+- `08-seguridad-privacidad.md`: datos sensibles, controles y riesgos.
+- `09-roadmap.md`: prioridades, deuda y decisiones pendientes.
+- `changelog.md`: cambios relevantes por fecha.
 
 ## Cómo mantenerla
 
-- Cada cambio importante debe actualizar el documento correspondiente.
-- Si se agrega una regla, debe ir en `04-reglas-de-negocio.md`.
-- Si se agrega una entidad o campo, debe ir en `05-modelo-de-datos.md`.
-- Si se cambia una pantalla principal o flujo, debe ir en `07-flujos-principales.md`.
-- Si se cambia una decisión visual importante, debe ir en `06-ux-ui.md`.
-- Si el cambio impacta producción, registrarlo en `changelog.md`.
+- Actualizar el documento afectado en el mismo cambio que modifica comportamiento.
+- Registrar en `changelog.md` los cambios de producto, permisos, datos, reglas, UX o despliegue.
+- Mantener las claves, rutas, endpoints y nombres de campos sincronizados con el código.
+- Evitar documentos de intención que contradigan el estado real del repo.
 
-## Qué no documentar
+## Fuente de verdad técnica
 
-- Microcambios de copy sin impacto funcional.
-- Refactors internos que no cambian comportamiento.
-- Ideas vagas que todavía no fueron decididas.
-
-Para ideas futuras usar `09-roadmap.md`.
+- Tipos: `lib/types.ts`.
+- Defaults y reglas de dominio: `lib/domain.ts`.
+- Acceso a Firestore: `lib/repositories.ts`.
+- Validación de payloads: `lib/validation.ts`.
+- APIs: `app/api/*/route.ts`.
+- Pantallas principales: `app/page.tsx`, `app/equipos/[teamId]/page.tsx`, `app/equipos/[teamId]/admin/page.tsx`, `app/master/page.tsx`.

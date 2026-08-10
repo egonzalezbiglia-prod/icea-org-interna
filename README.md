@@ -1,50 +1,64 @@
-# Plantilla de documentación para nuevos productos
+# ICEA Org Interna
 
-Esta carpeta sirve como punto de partida para documentar productos nuevos desde el inicio.
+Aplicación web para consultar y administrar grillas de turnos por equipo para ICEA 2026.
 
-La idea no es escribir documentos largos por burocracia, sino crear una base clara para que cada decisión futura tenga contexto, reglas y criterios de aceptación.
+## Estado actual
 
-## Cómo usarla
+- Stack: Next.js 15, React 19, TypeScript estricto y Firebase Firestore con `firebase-admin`.
+- Gestor de paquetes: `pnpm`.
+- App multi-equipo con datos aislados bajo `teams/{teamId}`.
+- Equipo por defecto: `organizacion-interna`.
+- Equipos iniciales: Organización Interna y Técnica.
+- Autenticación MVP por claves compartidas hardcodeadas.
+- Sin suite de tests automatizados configurada.
 
-1. Copiar la carpeta `docs/` dentro del nuevo proyecto.
-2. Completar primero:
-   - `00-producto.md`
-   - `01-spec-base.md`
-   - `02-roles-y-permisos.md`
-   - `03-arquitectura.md`
-   - `04-reglas-de-negocio.md`
-   - `changelog.md`
-3. Antes de implementar una funcionalidad nueva, crear o actualizar su spec.
-4. Después de implementar, actualizar el changelog y los documentos afectados.
+## Funcionalidades
 
-## Principio
+- Home `/` con listado de equipos activos.
+- Grilla pública por equipo en `/equipos/{teamId}`.
+- Modo admin en la grilla para asignar o desasignar servidores.
+- Admin por equipo en `/equipos/{teamId}/admin`.
+- Panel master en `/master` para crear, editar, activar o desactivar equipos.
+- Gestión de servidores, horarios, posiciones, reglas, plano e importación Excel/CSV.
+- Reporte de cobertura con descarga de sugerencia de asignación.
+- Tema claro/oscuro persistido en `localStorage`.
+- Franja "ahora" basada en fechas configurables por equipo.
 
-No documentar todo por adelantado. Documentar lo suficiente para:
+## Comandos
 
-- evitar contradicciones,
-- tomar mejores decisiones,
-- entender el sistema después de varias semanas,
-- reducir errores al cambiar código,
-- y construir mejores productos con menos improvisación.
-
-## Estructura sugerida
-
-```txt
-docs/
-  README.md
-  00-producto.md
-  01-spec-base.md
-  02-roles-y-permisos.md
-  03-arquitectura.md
-  04-reglas-de-negocio.md
-  05-modelo-de-datos.md
-  06-ux-ui.md
-  07-flujos-principales.md
-  08-seguridad-privacidad.md
-  09-roadmap.md
-  changelog.md
+```bash
+pnpm install
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm seed
 ```
 
-## Regla de oro
+## Variables de entorno
 
-Si una decisión afecta cómo funciona el producto, quién puede hacer algo, qué datos se guardan o cómo se valida una acción, debe quedar documentada.
+Para persistir datos en Firestore se requieren:
+
+```bash
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+```
+
+Si Firebase no está configurado, la app puede renderizar con defaults locales, pero las acciones de escritura fallan.
+
+## Documentación
+
+La documentación viva está en `docs/`:
+
+- `docs/00-producto.md`: visión y alcance.
+- `docs/01-spec-base.md`: especificación funcional vigente.
+- `docs/02-roles-y-permisos.md`: roles, claves y rutas.
+- `docs/03-arquitectura.md`: stack, rutas, APIs y estructura.
+- `docs/04-reglas-de-negocio.md`: reglas operativas.
+- `docs/05-modelo-de-datos.md`: entidades Firestore y defaults.
+- `docs/06-ux-ui.md`: lineamientos visuales e interacción.
+- `docs/07-flujos-principales.md`: recorridos manuales.
+- `docs/08-seguridad-privacidad.md`: datos sensibles y riesgos.
+- `docs/09-roadmap.md`: pendientes y deuda.
+- `docs/changelog.md`: cambios importantes por fecha.

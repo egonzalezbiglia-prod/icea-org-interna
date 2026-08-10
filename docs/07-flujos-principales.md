@@ -1,88 +1,136 @@
 # Flujos principales
 
 Estado inicial documentado: 2026-07-25  
-Última actualización: 2026-07-25
+Última actualización: 2026-08-10
 
-## Flujo: elegir equipo
+## Elegir equipo
 
 Rol: visitante.
 
-Pasos:
-
 1. Entrar a `/`.
-2. Ver lista de equipos activos.
+2. Ver equipos activos.
 3. Seleccionar un equipo.
 4. Entrar a `/equipos/{teamId}`.
-5. Usar el botón Equipos para volver a la home sin depender del back del navegador.
 
 Resultado esperado:
 
 - Se muestra la grilla pública del equipo seleccionado.
 
-## Flujo: consultar turnos
+## Consultar turnos
 
 Rol: visitante o servidor.
 
-Pasos:
-
-1. Entrar a la grilla del equipo.
+1. Entrar a `/equipos/{teamId}`.
 2. Buscar por nombre.
-3. Ver turnos agrupados por día.
-4. Revisar horario y posición.
+3. Ver la tarjeta del día activo si tiene turnos ese día.
+4. Revisar otros días si corresponde.
+5. Abrir el plano si necesita ubicar posiciones.
 
 Resultado esperado:
 
-- La persona ve sus turnos sin recorrer toda la grilla.
+- La persona encuentra sus turnos sin recorrer toda la grilla.
 
-## Flujo: administrar equipo
+## Asignar desde la grilla
 
 Rol: admin de equipo.
 
-Pasos:
+1. Entrar a `/equipos/{teamId}`.
+2. Abrir Admin desde el menú.
+3. Ingresar clave admin.
+4. Elegir día.
+5. Seleccionar servidor en una celda.
+6. Guardar automáticamente por API.
+
+Resultado esperado:
+
+- La asignación queda guardada en el equipo correcto.
+
+## Vaciar un turno
+
+Rol: admin de equipo.
+
+1. Activar modo admin en la grilla.
+2. Presionar el botón de vaciar en el encabezado del turno.
+3. Confirmar acción.
+
+Resultado esperado:
+
+- Todas las posiciones asignadas de ese turno quedan vacías.
+- No reaparecen asignaciones históricas al actualizar.
+
+## Administrar equipo
+
+Rol: admin de equipo.
 
 1. Entrar a `/equipos/{teamId}/admin`.
 2. Ingresar clave admin.
-3. Usar menú: Servidores, Horarios, Posiciones o Reglas.
+3. Usar secciones: Servidores, Horarios, Posiciones o Reglas.
 4. Guardar cambios.
-5. Volver a la grilla o a Equipos desde los botones del header.
+5. Refrescar grilla si necesita confirmar.
 
 Resultado esperado:
 
 - Los cambios afectan solo al equipo actual.
 
-## Flujo: crear equipo
+## Importar servidores
 
-Rol: master.
+Rol: admin de equipo.
 
-Pasos:
-
-1. Entrar a `/master`.
-2. Ingresar clave master.
-3. Crear equipo con nombre, descripción y estado activo.
-4. Abrir grilla o admin del equipo creado.
+1. Entrar al admin del equipo.
+2. Abrir Servidores.
+3. Descargar el Modelo si necesita la estructura.
+4. Presionar Importar.
+5. Seleccionar archivo `.xlsx`, `.xls` o `.csv`.
 
 Resultado esperado:
 
-- El equipo queda disponible en la home y con datos iniciales por defecto.
+- Se agregan servidores nuevos.
+- Los existentes por celular o nombre normalizado se omiten.
+
+## Revisar cobertura
+
+Rol: admin de equipo.
+
+1. Entrar a Servidores.
+2. Abrir Reporte.
+3. Revisar ideal, mínimo, full bruto, netos y estados.
+4. Descargar sugerencia si necesita planilla.
+5. Copiar mensaje de turno si corresponde.
+
+Resultado esperado:
+
+- El admin entiende faltantes de cobertura por turno.
+
+## Crear o editar equipo
+
+Rol: master.
+
+1. Entrar a `/master`.
+2. Ingresar clave master.
+3. Crear equipo o editar uno existente.
+4. Configurar nombre, descripción, activo, ícono y fechas.
+5. Guardar.
+6. Abrir grilla o admin desde el panel.
+
+Resultado esperado:
+
+- El equipo queda disponible si está activo.
+- Las fechas impactan el riel de días y la franja "ahora".
 
 ## Validación manual antes de deploy
 
+- [ ] `pnpm build` pasa.
+- [ ] `pnpm lint` pasa o solo deja warnings conocidos.
 - [ ] Home lista equipos activos.
-- [ ] Cada grilla y admin permite volver a Equipos sin usar back del navegador.
-- [ ] Organización Interna abre en `/equipos/organizacion-interna`.
-- [ ] Técnica abre en `/equipos/tecnica`.
-- [ ] Admin por equipo guarda cambios aislados.
-- [ ] Reglas por equipo afectan desplegables.
-- [ ] Panel Master crea un equipo nuevo.
-- [ ] Mobile admin abre secciones en drawer lateral sin empujar contenido.
-
-## Importar servidores
-
-Última actualización: 2026-07-26
-
-1. Entrar al admin del equipo.
-2. Abrir la sección Servidores.
-3. Opcionalmente, descargar el archivo Modelo para usar la estructura correcta.
-4. Presionar Importar.
-5. Seleccionar un archivo Excel o CSV con columnas: Nombre completo, celular, franja jueves, franja viernes, franja sábado.
-6. El sistema agrega solo servidores nuevos; no pisa ni edita los ya cargados.
+- [ ] Grilla carga por `teamId`.
+- [ ] Botón Actualizar funciona desde `/equipos/{teamId}`.
+- [ ] Búsqueda muestra turnos por día.
+- [ ] Plano abre y, con admin, permite guardar PNG/nota.
+- [ ] Modo admin asigna y desasigna.
+- [ ] Vaciar turno no revive fallback histórico.
+- [ ] Admin guarda servidores, horarios, posiciones y reglas.
+- [ ] Importación Excel/CSV agrega nuevos y omite duplicados.
+- [ ] Reporte de cobertura abre y descarga sugerencia.
+- [ ] Master crea/edita equipo, ícono, activo y fechas.
+- [ ] Mobile admin usa drawer lateral.
+- [ ] Tema claro/oscuro se ve consistente.

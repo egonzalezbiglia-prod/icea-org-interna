@@ -1,7 +1,7 @@
 # Modelo de datos
 
 Estado inicial documentado: 2026-07-25  
-Última actualización: 2026-07-25
+Última actualización: 2026-08-10
 
 ## Firestore
 
@@ -12,6 +12,7 @@ teams/{teamId}
   name
   description
   icon
+  congressDates
   active
   createdAt
   updatedAt
@@ -24,114 +25,136 @@ teams/{teamId}/settings/plan
 teams/{teamId}/settings/rules
 ```
 
-## Entidades
+Fallback histórico para `organizacion-interna`:
 
-### `Team`
+```txt
+servers/{serverId}
+slots/{slotId}
+positions/{positionId}
+assignments/{assignmentId}
+settings/plan
+```
 
-Campos:
+## `Team`
 
-- `id`
-- `name`
-- `description`
-- `icon`: id de icono elegible desde Panel Master (catálogo en `lib/domain.ts` / `components/team-icon.tsx`). `null` = la home usa la inicial del nombre.
-- `congressDates`: fechas editables del congreso por día (`jueves`, `viernes`, `sabado`) en formato `YYYY-MM-DD`.
-- `active`
-- `createdAt`
-- `updatedAt`
+- `id`: slug del equipo.
+- `name`: nombre visible.
+- `description`: descripción opcional.
+- `icon`: id del catálogo de íconos o `null`.
+- `congressDates`: fechas por día en formato `YYYY-MM-DD`.
+- `active`: controla si aparece en la home.
+- `createdAt`: timestamp.
+- `updatedAt`: timestamp.
 
-### `Server`
+## `TeamSettings`
 
-Campos:
+- `maxConsecutiveShifts`: número entre 1 y 12.
+- `blockAfterMaxConsecutive`: boolean.
+- `allowPartialAvailability`: boolean.
+- `warnPartialAvailability`: boolean.
+- `preventSameSlotDuplicate`: boolean.
+- `updatedAt`: timestamp.
 
-- `id`
-- `fullName`
-- `whatsapp`
-- `countryCode`
-- `dialCode`
-- `active`
-- `availability[]`
-- `createdAt`
-- `updatedAt`
+## `Server`
 
-### `AvailabilityRange`
+- `id`: id Firestore.
+- `fullName`: nombre completo.
+- `whatsapp`: número limpio.
+- `countryCode`: `AR`, `UY`, `PY`, `CL`, `BR` o `BO`.
+- `dialCode`: prefijo telefónico.
+- `active`: boolean.
+- `availability`: lista de rangos.
+- `createdAt`: timestamp.
+- `updatedAt`: timestamp.
 
-Campos:
+## `AvailabilityRange`
 
-- `id`
-- `dayId`: `jueves`, `viernes`, `sabado`
-- `start`: HH:MM
-- `end`: HH:MM
+- `id`: id local del rango.
+- `dayId`: `jueves`, `viernes` o `sabado`.
+- `start`: `HH:MM`.
+- `end`: `HH:MM`.
 
-### `Slot`
+## `Slot`
 
-Campos:
+- `id`: id del horario.
+- `dayId`: día.
+- `start`: inicio `HH:MM`.
+- `end`: fin `HH:MM`.
+- `label`: etiqueta visible.
+- `idealCoverage`: objetivo ideal de servidores.
+- `minimumCoverage`: objetivo mínimo.
 
-- `id`
-- `dayId`
-- `start`
-- `end`
-- `label`
-- `idealCoverage`
-- `minimumCoverage`
+## `Position`
 
-### `Position`
+- `id`: número positivo.
+- `name`: nombre visible.
 
-Campos:
+## `Assignment`
 
-- `id`
-- `name`
+- `id`: `{dayId}__{slotId}__{positionId}`.
+- `dayId`: día.
+- `slotId`: id del horario.
+- `positionId`: número de posición.
+- `serverId`: id del servidor o `null`.
+- `serverName`: snapshot del nombre o `null`.
+- `updatedAt`: timestamp.
+- `updatedBy`: actor.
 
-### `Assignment`
+Una asignación con `serverId: null` representa una celda explícitamente vacía y evita que reaparezcan datos históricos por fallback.
 
-Campos:
+## `Plan`
 
-- `id`: `{dayId}__{slotId}__{positionId}`
-- `dayId`
-- `slotId`
-- `positionId`
-- `serverId`
-- `serverName`
-- `updatedAt`
-- `updatedBy`
-
-### `TeamSettings`
-
-Campos:
-
-- `maxConsecutiveShifts`
-- `blockAfterMaxConsecutive`
-- `allowPartialAvailability`
-- `warnPartialAvailability`
-- `preventSameSlotDuplicate`
-- `updatedAt`
-
-### `Plan`
-
-Campos:
-
-- `imageUrl`
-- `note`
-- `updatedAt`
+- `imageUrl`: URL o data URL PNG.
+- `note`: nota visible.
+- `updatedAt`: timestamp.
 
 ## Defaults
 
-Equipos iniciales:
+Días:
 
-- `organizacion-interna`: Organización Interna.
-- `tecnica`: Técnica.
+- `jueves`
+- `viernes`
+- `sabado`
 
-Reglas iniciales:
+Fechas default ICEA 2026:
 
-- `maxConsecutiveShifts`: 2
-- `blockAfterMaxConsecutive`: true
-- `allowPartialAvailability`: true
-- `warnPartialAvailability`: true
-- `preventSameSlotDuplicate`: true
+- Jueves: `2026-08-13`
+- Viernes: `2026-08-14`
+- Sábado: `2026-08-15`
+
+Equipos default:
+
+- `organizacion-interna`: Organización Interna, ícono `users`.
+- `tecnica`: Técnica, ícono `sliders`.
+
+Horarios default:
+
+- Jueves: `13:00-15:00`, `15:00-18:00`, `18:00-20:00`, `20:00-22:00`.
+- Viernes: `08:00-11:00`, `11:00-13:00`, `13:00-15:00`, `15:00-18:00`, `18:00-20:00`, `20:00-23:00`.
+- Sábado: `08:00-11:00`, `11:00-13:00`, `13:00-15:00`, `15:00-18:00`, `18:00-20:00`, `20:00-23:00`.
+
+Posiciones default:
+
+- 24 posiciones, `Posicion 1` a `Posicion 24`.
+
+Cobertura default:
+
+- Ideal: 40.
+- Mínima: 30.
+
+Reglas default:
+
+- `maxConsecutiveShifts`: 2.
+- `blockAfterMaxConsecutive`: `true`.
+- `allowPartialAvailability`: `true`.
+- `warnPartialAvailability`: `true`.
+- `preventSameSlotDuplicate`: `true`.
 
 ## Migraciones
 
-- 2026-07-25: se agrega modelo multi-equipo con `teams/{teamId}`.
-- 2026-07-25: Organización Interna mantiene fallback a colecciones root antiguas: `servers`, `slots`, `positions`, `assignments`, `settings/plan`.
-- 2026-07-25: se agrega el campo `icon` a `Team` (id del catálogo de íconos; `null` cae a la inicial). Docs antiguos sin el campo se leen como `null`, salvo los equipos por defecto que mantienen su ícono.
-- 2026-07-25: se agrega `congressDates` a `Team` para configurar desde Panel Master las fechas usadas por el riel de días y la franja "ahora".
-- 2026-07-26: al desasignar un turno se conserva un documento de asignación con `serverId: null` para tapar datos históricos leídos por fallback desde colecciones root.
+- 2026-07-25: modelo multi-equipo bajo `teams/{teamId}`.
+- 2026-07-25: fallback a colecciones root antiguas para `organizacion-interna`.
+- 2026-07-25: campo `icon` en `Team`.
+- 2026-07-25: campo `congressDates` en `Team`.
+- 2026-07-26: desasignación conserva documento vacío con `serverId: null`.
+- 2026-08-10: documentación sincronizada con repo actual.

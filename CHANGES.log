@@ -26,3 +26,4 @@
 - [CODEX] Validé descarga de modelo Excel de servidores con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
 - [CODEX] Corregí desasignación de turnos: ahora guarda una asignación vacía con `serverId: null` para bloquear el fallback histórico y evitar que reaparezca al actualizar. Pendiente validar build/lint.
 - [CODEX] Validé corrección de desasignación con `pnpm build` y `pnpm lint`: ambos pasan; quedan solo warnings conocidos en `components/congress-app.tsx`.
+- [CODEX] Actualicé toda la documentación contra el repo actual: README raíz, docs de producto/spec/roles/arquitectura/reglas/datos/UX/flujos/seguridad/roadmap, changelog y archivos AGENTS/CLAUDE.

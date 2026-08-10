@@ -1,127 +1,91 @@
 # UX/UI
 
-Estado inicial documentado: AAAA-MM-DD  
-Última actualización: AAAA-MM-DD
+Estado inicial documentado: 2026-07-25  
+Última actualización: 2026-08-10
 
 ## Personalidad visual
 
-Completar:
-
 - Sobria.
 - Cálida.
-- Técnica.
-- Editorial.
-- Comercial.
 - Operativa.
-- Otra.
+- Mobile-first.
+- Con identidad ICEA sin volverse decorativa.
 
 ## Tono de voz
 
-Cómo habla el producto:
+El producto habla claro, directo y en español rioplatense/neutro:
 
-- Completar.
+- "Seleccioná tu equipo".
+- "Buscar servidor por nombre".
+- "Guardar reglas".
+- "No hay turnos asignados para esa búsqueda".
 
-Cómo no debe hablar:
+Evitar:
 
-- Completar.
+- Textos técnicos innecesarios para usuarios de consulta.
+- Explicaciones largas dentro de la interfaz.
+- Mensajes que culpen al usuario.
 
-## Principios de interfaz
+## Identidad visual
 
-- Claridad antes que decoración.
-- Mobile-first si aplica.
-- Acciones principales visibles.
-- Estados vacíos útiles.
-- Errores con explicación accionable.
+- Tipografía de títulos: Fraunces vía `next/font`.
+- Tipografía de cuerpo: Hanken Grotesk vía `next/font`.
+- Paleta: pino, esmeralda y lima sobre papel cálido.
+- Bordes: radio bajo, alrededor de 8 px.
+- Íconos: `lucide-react`.
+- Versículo visible en home y pie de grilla.
 
-## Navegación
+## Tema claro/oscuro
 
-Describir:
+- La app arranca en modo oscuro si no hay preferencia guardada.
+- La preferencia se guarda en `localStorage` con `icea-theme`.
+- El script de tema corre en `app/layout.tsx` antes de renderizar children.
+- `ThemeToggle` alterna `document.documentElement.dataset.theme`.
+- El modo oscuro cubre home, grilla, admin, master, botones, buscador, tabs, tablas y estados.
 
-- Menú principal.
-- Header.
-- Sidebar.
-- Footer.
-- Mobile.
+## Home
 
-## Componentes esperados
+- La home lista solo equipos activos.
+- Cada fila muestra ícono o inicial, nombre, descripción y chevron.
+- El Panel Master está disponible desde el header.
+- El selector de equipo debe sentirse rápido, no como landing comercial.
 
-- Botones.
-- Inputs.
-- Cards.
-- Tablas.
-- Modales.
-- Badges.
-- Toasts/alertas.
+## Grilla
+
+- Header con acciones principales: Plano, Actualizar y menú.
+- Menú de más opciones: Inicio si corresponde, Tema, Admin y Salir admin.
+- Buscador destacado para que cada servidor encuentre sus turnos.
+- Resultados agrupados por día.
+- Tarjeta "Tu servicio" para el día activo.
+- Riel de días con fecha corta.
+- Tabla horizontal con posiciones como filas y turnos como columnas.
+- Franja "ahora" resaltada si la fecha/hora del dispositivo cae dentro del congreso.
+- Alertas compactas dentro de la celda: inactivo, parcial, consecutivos.
+
+## Admin
+
+- Login simple por clave.
+- Header alineado con la grilla.
+- En mobile, el menú de secciones funciona como drawer superpuesto.
+- Secciones: Servidores, Horarios, Posiciones y Reglas.
+- Servidores muestra capacidad, disponibilidad por día, WhatsApp, edición y eliminación.
+- Reporte de cobertura usa modal con tabla densa.
+- Horarios permite copiar imagen compartible.
+
+## Master
+
+- Permite crear y editar equipos en una pantalla operativa.
+- Campos por equipo: nombre, descripción, activo, ícono y fechas del congreso.
+- Accesos rápidos a grilla y admin.
 
 ## Accesibilidad
 
-- Contraste suficiente.
-- Estados focus.
-- Labels en formularios.
-- No depender solo del color.
-
-## Decisiones visuales
-
-- Tipografía:
-- Paleta:
-- Iconos:
-- Espaciado:
-- Bordes:
+- Botones iconográficos tienen `aria-label` cuando no tienen texto suficiente.
+- Inputs relevantes tienen labels o `aria-label`.
+- No depender solo del color: las alertas también muestran texto.
+- Mantener contraste suficiente en ambos temas.
+- Las acciones destructivas piden confirmación.
 
 ## Criterio
 
-Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe simplificarse.
-
-
-## Drawer mobile del admin
-
-Última actualización: 2026-07-25
-
-- En mobile, el menú de secciones del admin debe comportarse como shell/drawer lateral superpuesto.
-- El menú no debe empujar el contenido ni ocupar un bloque grande dentro del flujo de la página.
-- El drawer debe tener backdrop para cerrar tocando fuera y botón de cierre interno.
-- Las filas editables de horarios en mobile deben compactar día, inicio y fin para evitar controles excesivamente anchos.
-
-
-## Home de selección de equipo
-
-Última actualización: 2026-07-25
-
-- La home inicial debe priorizar una selección simple, centrada y con identidad propia.
-- La home usa modo oscuro por defecto para separar la selección inicial del resto de la app operativa.
-- El título principal vive dentro del bloque de selección, no en el topbar.
-- Los equipos se presentan en lista vertical, no en grilla de tarjetas.
-- La acción de crear equipos no aparece en la home; vive solo en Panel Master.
-- Cada fila de equipo usa icono, nombre, descripción opcional y chevron.
-- Las filas de equipo deben mantenerse compactas para funcionar como selección rápida, no como tarjetas hero.
-
-
-## Modo claro/oscuro
-
-Última actualización: 2026-07-25
-
-- La app permite elegir modo claro u oscuro desde los headers principales.
-- La preferencia se guarda por dispositivo en `localStorage` con la clave `icea-theme`.
-- Si no existe preferencia guardada, la app inicia en modo oscuro para respetar la identidad visual de la home.
-- El cambio de tema no modifica datos de Firestore ni sesiones de admin/master.
-
-## Dark mode de grilla
-
-Última actualización: 2026-07-25
-
-- La grilla debe usar tokens semánticos (`--grid-*`) para encabezados, celdas, columna de puestos, alertas y franja "ahora".
-- En modo claro mantiene lectura tipo papel.
-- En modo oscuro no debe conservar fondos blancos hardcodeados: tabla, selectores, estados y resultados deben integrarse con la paleta oscura.
-- El dark mode incluye header, botones, buscador y tabs; no debe quedar una banda clara aislada sobre la grilla oscura.
-- Los estados de alerta deben seguir siendo distinguibles sin depender solo del color, usando texto/puntos/contraste.
-
-## Importación de servidores
-
-Última actualización: 2026-07-26
-
-- El admin de Servidores permite importar archivos `.xlsx`, `.xls` o `.csv`.
-- La sección Servidores ofrece un botón `Modelo` para descargar `modelo-importar-servidores.xlsx` con columnas y ejemplo de carga.
-- El formato esperado es: `Nombre completo`, `celular`, `franja jueves`, `franja viernes`, `franja sábado`.
-- La importación agrega servidores nuevos y no modifica registros existentes.
-- Si ya existe un servidor por celular o por nombre normalizado, se omite para evitar duplicados accidentales.
-- Las franjas pueden escribirse como `08:00-13:00`, `08 a 13` o múltiples rangos en la misma celda, por ejemplo `08 a 12 y 18 a 23`.
+Si una pantalla empieza a sentirse más compleja que la tarea que resuelve, debe simplificarse o dividirse.

@@ -1,101 +1,85 @@
-# Spec base - Asignacion de Servidores
+# Spec base - Grilla de turnos
 
-Estado inicial documentado: 2026-07-24
-Ultima actualizacion: 2026-07-24
-
-## Nombre de la funcionalidad
-
-Grilla inteligente de turnos para Servidores de congreso.
+Estado inicial documentado: 2026-07-24  
+Última actualización: 2026-08-10
 
 ## Estado
 
-- En desarrollo
+En desarrollo operativo.
 
 ## Objetivo
 
-Organizar posiciones del salon por dia y horario, asignando Servidores segun disponibilidad real, carga ya asignada y restricciones operativas.
+Organizar posiciones del salón por día y horario, asignando servidores según disponibilidad real, carga ya asignada y restricciones configurables por equipo.
 
 ## Usuarios afectados
 
-- Organizacion interna/admin.
 - Servidores que consultan sus turnos.
+- Admins que cargan y ajustan la grilla.
+- Master que gestiona equipos.
 
-## Alcance
+## Alcance funcional
 
 Incluye:
 
-- Lectura publica de la grilla para cualquier persona con link.
-- Acceso admin con clave `1icea2026`.
-- Alta y edicion de Servidores.
-- Nombre completo, WhatsApp, pais, estado activo/inactivo y rangos de disponibilidad por dia.
-- Asignacion por posicion/turno usando desplegable validado.
-- Alertas por disponibilidad parcial, servidor inactivo y dos turnos consecutivos.
-- Bloqueo de tercera asignacion consecutiva.
-- Bloqueo de doble posicion en un mismo turno.
-- Sugerencia priorizada de Servidores con menor disponibilidad/carga.
+- Lectura pública de la grilla para cualquier persona que accede por la app.
+- Acceso admin con clave compartida.
+- Alta, edición, activación, desactivación y eliminación de servidores.
+- Nombre completo, WhatsApp, país, estado activo/inactivo y rangos de disponibilidad por día.
+- Importación de servidores desde Excel/CSV.
+- Descarga de modelo Excel de importación.
+- Alta, edición y eliminación de horarios.
+- Objetivo ideal y mínimo de cobertura por horario.
+- Alta, edición y eliminación de posiciones.
+- Asignación y desasignación por posición/turno.
+- Vaciar todas las asignaciones de un turno desde la grilla.
+- Alertas por disponibilidad parcial, servidor inactivo y turnos consecutivos.
+- Bloqueo opcional de tercera asignación consecutiva.
+- Bloqueo opcional de doble posición en un mismo turno.
+- Sugerencia priorizada de servidores.
+- Reporte de cobertura por turno con exportación.
+- Plano PNG y nota visible por equipo.
 
-No incluye por ahora:
+No incluye:
 
-- Roles/perfiles con login individual.
-- Observaciones por Servidor.
-- Subida real de imagen a Storage.
-- Envio automatico de WhatsApp.
+- Login individual.
+- Observaciones privadas por servidor.
+- Mensajería automática por WhatsApp.
+- Storage dedicado para imágenes.
 
-## Reglas de negocio
+## Reglas principales
 
-- Los Servidores pasan rangos libres por dia, no necesariamente alineados a turnos.
-- Un Servidor aparece como opcion normal si su disponibilidad cubre el turno completo.
-- Un Servidor aparece al final con alerta si cubre parcialmente el turno.
-- Si la disponibilidad empieza despues del inicio del turno, la alerta indica faltante al inicio.
-- Si la disponibilidad termina antes del final del turno, la alerta indica faltante al final.
-- Si no tiene disponibilidad para ese dia, no aparece en el desplegable.
-- Si esta inactivo, no aparece para nuevas asignaciones.
-- Si ya estaba asignado y luego se desactiva, queda visible en la celda con alerta roja.
-- Un Servidor no puede estar en mas de una posicion en el mismo turno.
-- Dos turnos son consecutivos si el fin de uno coincide con el inicio del otro, dentro del mismo dia.
-- Un Servidor puede tener como maximo dos turnos consecutivos.
-- Si ya tiene dos turnos consecutivos, esa condicion se resalta como aviso.
-- No debe aparecer para un tercer turno consecutivo.
-- Las opciones se ordenan priorizando:
-  1. Servidores activos con disponibilidad completa.
-  2. Menos horas disponibles totales.
-  3. Menor porcentaje ocupado sobre disponible.
-  4. Menor cantidad de horas ocupadas.
-  5. Menor cantidad de turnos asignados.
-  6. Orden alfabetico.
-  7. Servidores con disponibilidad parcial al final, con alerta.
+- Los servidores cargan rangos libres por día.
+- La disponibilidad no necesita coincidir exactamente con los turnos.
+- Un servidor aparece como opción normal si cubre todo el turno.
+- Un servidor aparece como opción parcial si la regla del equipo lo permite.
+- Si no tiene disponibilidad para ese día o turno, no aparece.
+- Si está inactivo, no aparece para nuevas asignaciones.
+- Si ya estaba asignado y luego queda inactivo, la celda se marca como riesgo.
+- Un servidor no puede estar en más de una posición del mismo turno si `preventSameSlotDuplicate` está activo.
+- Dos turnos son consecutivos si el fin de uno coincide con el inicio del otro, dentro del mismo día.
+- `maxConsecutiveShifts` define el máximo tolerado.
+- `blockAfterMaxConsecutive` bloquea opciones que exceden ese máximo.
 
-## Datos necesarios
+## Priorización del desplegable
 
-Servidor:
+Las opciones se ordenan así:
 
-- Nombre completo.
-- WhatsApp.
-- Pais/prefijo: Argentina por defecto; Uruguay, Paraguay, Chile, Brasil y Bolivia como opciones.
-- Activo/inactivo.
-- Rangos de disponibilidad por dia.
+1. Servidores activos con disponibilidad completa.
+2. Menos horas disponibles totales.
+3. Menor porcentaje ocupado sobre disponible.
+4. Menor cantidad de horas ocupadas.
+5. Menor cantidad de turnos asignados.
+6. Orden alfabético.
+7. Servidores con disponibilidad parcial al final.
 
-Turno:
+## Criterios de aceptación
 
-- Dia.
-- Hora inicio.
-- Hora fin.
-
-Asignacion:
-
-- Dia.
-- Turno.
-- Posicion.
-- Servidor asignado.
-
-## Criterios de aceptacion
-
-- [ ] La grilla permite asignar solo Servidores disponibles completos o parciales.
-- [ ] Los parciales aparecen con alerta y al final del desplegable.
-- [ ] Un Servidor no aparece si ya esta en otra posicion del mismo turno.
-- [ ] Un Servidor no aparece si la asignacion generaria tercer turno consecutivo.
-- [ ] Dos turnos consecutivos asignados quedan resaltados.
-- [ ] Un Servidor inactivo asignado queda en rojo en la grilla.
-- [ ] Admin puede activar/desactivar Servidores sin borrarlos.
-- [ ] Admin puede ver horas disponibles, horas ocupadas y porcentaje ocupado.
-- [ ] Admin tiene boton WhatsApp por Servidor.
+- La home muestra solo equipos activos.
+- La grilla pública carga datos del equipo seleccionado.
+- El admin puede modificar solo el equipo indicado por `teamId`.
+- La grilla exige clave admin para escribir asignaciones.
+- Las opciones respetan disponibilidad, duplicados y consecutivos.
+- La desasignación no revive datos históricos por fallback.
+- La importación agrega nuevos servidores y omite duplicados por celular o nombre normalizado.
+- El reporte de cobertura usa los objetivos ideal y mínimo de cada horario.
+- El modo claro/oscuro no altera datos.

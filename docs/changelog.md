@@ -2,6 +2,21 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-10 · Documentación sincronizada con repo actual
+
+### Documentación
+
+- README raíz actualizado para describir ICEA Org Interna como aplicación real, no como plantilla.
+- `docs/README.md` actualizado como índice vivo de producto y fuente de verdad técnica.
+- Producto, spec, roles, arquitectura, reglas, modelo de datos, UX, flujos, seguridad y roadmap sincronizados contra rutas, APIs, tipos, repositorios y componentes actuales.
+- `AGENTS.md` y `CLAUDE.md` actualizados con stack, comandos, variables de entorno, estructura vigente y reglas de mantenimiento documental.
+
+### Estado relevado
+
+- App multi-equipo con Firestore bajo `teams/{teamId}` y fallback histórico para `organizacion-interna`.
+- `GET /api/schedule` documentado con requisito de `teamId` y cliente permitido por header/cookie.
+- Importación Excel/CSV, reporte de cobertura, objetivos ideal/mínimo por horario, plano PNG, fechas configurables e íconos por equipo documentados.
+
 ## 2026-07-25 · Rediseño «Programa de servicio»
 
 ### UX/UI

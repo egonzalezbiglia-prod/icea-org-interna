@@ -2,10 +2,11 @@
 
 import type React from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Copy, Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { assignmentId, fechaCortaDia, hoursBetween, minutesFromTime, normalizeSearch, slotEnCurso } from "@/lib/domain";
+import { readCachedSchedule, writeCachedSchedule } from "@/lib/schedule-cache";
 import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -202,13 +203,27 @@ function optionsForCell(data: SchedulePayload, slot: Slot, currentAssignmentId: 
     });
 }
 
+function emptySchedule(teamId: string): SchedulePayload {
+  return {
+    team: { id: teamId, name: teamId, description: null, icon: null, congressDates: { jueves: "2026-08-13", viernes: "2026-08-14", sabado: "2026-08-15" }, active: true, createdAt: null, updatedAt: null },
+    settings: { maxConsecutiveShifts: 2, blockAfterMaxConsecutive: true, allowPartialAvailability: true, warnPartialAvailability: true, preventSameSlotDuplicate: true, updatedAt: null },
+    days: [],
+    slots: [],
+    positions: [],
+    servers: [],
+    assignments: [],
+    plan: { imageUrl: null, note: null, updatedAt: null },
+  };
+}
 
-export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
-  const [data, setData] = useState(initialData);
-  const [activeDay, setActiveDay] = useState<DayId>(initialData.days[0]?.id ?? "jueves");
+
+export function CongressApp({ initialData = null, teamId: initialTeamId }: { initialData?: SchedulePayload | null; teamId: string }) {
+  const [data, setData] = useState<SchedulePayload>(() => initialData ?? emptySchedule(initialTeamId));
+  const [hasLoadedData, setHasLoadedData] = useState(Boolean(initialData));
+  const [activeDay, setActiveDay] = useState<DayId>(initialData?.days[0]?.id ?? "jueves");
   const [query, setQuery] = useState("");
   const [adminKey, setAdminKey] = useState("");
-  const teamId = initialData.team.id;
+  const teamId = data.team.id;
   const adminSessionKey = `${ADMIN_SESSION_KEY}:${teamId}`;
   const [message, setMessage] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
@@ -290,6 +305,10 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
   const otrosDias = personalShiftsByDay.filter((group) => group.day.id !== activeDay);
 
   useEffect(() => {
+    if (initialData) writeCachedSchedule(initialData);
+  }, [initialData]);
+
+  useEffect(() => {
     if (window.sessionStorage.getItem(adminSessionKey) === "1") setAdminKey(ADMIN_KEY);
   }, [adminSessionKey]);
 
@@ -299,16 +318,30 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     return () => window.clearTimeout(timeout);
   }, [message]);
 
-  async function refresh() {
+  const refresh = useCallback(async (showMessage = true) => {
     setMessage("");
     try {
       const next = await apiJson<SchedulePayload>(`/api/schedule?teamId=${encodeURIComponent(teamId)}`);
       setData(next);
-      if (isAdmin) setMessage("Grilla actualizada.");
+      setHasLoadedData(true);
+      writeCachedSchedule(next);
+      if (showMessage && isAdmin) setMessage("Grilla actualizada.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo actualizar.");
     }
-  }
+  }, [isAdmin, teamId]);
+
+  useEffect(() => {
+    if (hasLoadedData) return;
+    const cached = readCachedSchedule(teamId);
+    if (cached) {
+      setData(cached);
+      setHasLoadedData(true);
+      setActiveDay(cached.days[0]?.id ?? "jueves");
+      return;
+    }
+    void refresh(false);
+  }, [hasLoadedData, refresh, teamId]);
 
   function leaveAdmin() {
     setAdminKey("");
@@ -329,7 +362,9 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       setData((current) => {
         const next = current.assignments.filter((assignment) => assignment.id !== id);
         if (result.assignment?.serverId) next.push(result.assignment);
-        return { ...current, assignments: next };
+        const nextData = { ...current, assignments: next };
+        writeCachedSchedule(nextData);
+        return nextData;
       });
       setMessage("Cambio guardado.");
     } catch (error) {
@@ -356,10 +391,14 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         method: "PATCH",
         body: JSON.stringify({ teamId, dayId: activeDay, slotId: slot.id, positionId: position.id, serverId: null, editKey: adminKey }),
       })));
-      setData((current) => ({
-        ...current,
-        assignments: current.assignments.filter((assignment) => !(assignment.dayId === activeDay && assignment.slotId === slot.id)),
-      }));
+      setData((current) => {
+        const nextData = {
+          ...current,
+          assignments: current.assignments.filter((assignment) => !(assignment.dayId === activeDay && assignment.slotId === slot.id)),
+        };
+        writeCachedSchedule(nextData);
+        return nextData;
+      });
       setMessage(`${label} vacío.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo vaciar el turno.");
@@ -383,7 +422,11 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         method: "PATCH",
         body: JSON.stringify({ teamId, imageUrl, note, editKey: adminKey }),
       });
-      setData((current) => ({ ...current, plan: result.plan }));
+      setData((current) => {
+        const nextData = { ...current, plan: result.plan };
+        writeCachedSchedule(nextData);
+        return nextData;
+      });
       setMessage("Plano actualizado.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo actualizar el plano.");
@@ -529,7 +572,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         </div>
         <div className="topbar-actions">
           <button className="ghost-button" onClick={() => setPlanOpen(true)}><MapIcon size={17} />Plano</button>
-          <button className="ghost-button" onClick={refresh}><RefreshCw size={17} />Actualizar</button>
+          <button className="ghost-button" onClick={() => void refresh()}><RefreshCw size={17} />Actualizar</button>
           <div className="menu-wrap">
             <button className="ghost-button menu-trigger" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
               <MoreHorizontal size={18} />
@@ -555,6 +598,15 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       </header>
 
       <main className="page">
+        {!hasLoadedData ? (
+          <section className="grid-loading">
+            <strong>Cargando grilla...</strong>
+            <span>Preparando la última información disponible.</span>
+          </section>
+        ) : null}
+
+        {hasLoadedData ? (
+          <>
         <section className="controls">
           <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar servidor por nombre" />{query ? <button type="button" aria-label="Limpiar busqueda" onClick={() => setQuery("")}><X size={16} /></button> : null}</label>
         </section>
@@ -696,6 +748,8 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         </section>
 
         <p className="footer-verse"><span>Sirvan de buena voluntad, como quien sirve al Señor y no a los hombres.</span><strong>Efesios 6:7</strong></p>
+          </>
+        ) : null}
       </main>
 
       {planOpen ? (

@@ -2,10 +2,11 @@
 
 import type React from "react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BarChart3, CalendarClock, Check, Copy, Home, Lock, Download, LogOut, Menu, MessageCircle, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, SlidersHorizontal, Trash2, Upload, Users, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { COUNTRIES, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, cleanPhone, fechaCortaDia, hoursBetween, normalizeSearch, whatsappUrl } from "@/lib/domain";
+import { writeCachedSchedule } from "@/lib/schedule-cache";
 import type { Assignment, AvailabilityRange, CountryCode, DayId, Position, SchedulePayload, Server, Slot } from "@/lib/types";
 
 const ADMIN_KEY = "1icea2026";
@@ -512,6 +513,10 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const isAdmin = adminKey === ADMIN_KEY;
 
+  useEffect(() => {
+    writeCachedSchedule(initialData);
+  }, [initialData]);
+
   function enterAdmin(event: React.FormEvent) {
     event.preventDefault();
     if (adminInput === ADMIN_KEY) {
@@ -538,6 +543,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
         body: JSON.stringify({ ...body, teamId, editKey: adminKey }),
       });
       setData(next);
+      writeCachedSchedule(next);
       setMessage("Cambios guardados.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo actualizar.");
@@ -549,6 +555,7 @@ export function AdminApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const next = await apiJson<SchedulePayload>(`/api/schedule?teamId=${encodeURIComponent(teamId)}`);
       setData(next);
+      writeCachedSchedule(next);
       setMessage("Info actualizada.");
       return next;
     } catch (error) {

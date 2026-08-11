@@ -532,6 +532,28 @@ h3 {
   margin: -0.2rem 0 0.85rem;
 }
 
+.grid-loading {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 auto;
+  padding: 1.2rem 1.4rem;
+  max-width: 520px;
+  color: var(--accent-ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.grid-loading strong {
+  font-size: 1.05rem;
+}
+
+.grid-loading span {
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+}
+
 .schedule-wrap {
   max-height: calc(100vh - 305px);
   overflow: auto;

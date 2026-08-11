@@ -525,13 +525,13 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
             const assignment = assignments.get(assignmentId(activeDay, slot.id, position.id));
             return Boolean(assignment?.serverId || assignment?.serverName);
           }).length;
-          const full = assignedCount >= group.positions.length;
-          if (!full) {
+          const criticalCoverage = assignedCount / group.positions.length <= 0.7;
+          if (criticalCoverage) {
             redondearRect(ctx, x + 10, y + 10, slotWidth - 20, altoFila - 28, 10);
             ctx.fillStyle = "rgba(255, 179, 191, 0.34)";
             ctx.fill();
           }
-          ctx.fillStyle = full ? "#10241d" : "#9c3142";
+          ctx.fillStyle = criticalCoverage ? "#9c3142" : "#10241d";
           ctx.font = "900 25px Arial, sans-serif";
           ctx.fillText(String(assignedCount), x + 18, y + 32);
           ctx.font = "800 13px Arial, sans-serif";

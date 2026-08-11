@@ -1,6 +1,6 @@
 import type { SchedulePayload } from "@/lib/types";
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 3;
 
 type ScheduleCache = {
   version: number;

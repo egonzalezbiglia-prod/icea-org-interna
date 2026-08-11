@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { editKeyFromRequest, verifyEditKey } from "@/lib/auth";
 import { DEFAULT_TEAM_ID } from "@/lib/domain";
-import { getSchedulePayload, upsertSlot, deleteSlot, upsertPosition, deletePosition, upsertServer, importServers, deleteServer, updateTeamSettings } from "@/lib/repositories";
+import { getSchedulePayload, writePublicScheduleSnapshot, upsertSlot, deleteSlot, upsertPosition, deletePosition, upsertServer, importServers, deleteServer, updateTeamSettings } from "@/lib/repositories";
 import { configSchema } from "@/lib/validation";
 
 function teamIdFromRequest(request: Request, body?: Record<string, unknown>) {
@@ -24,5 +24,7 @@ export async function PATCH(request: Request) {
   if (parsed.data.type === "importServers") await importServers(teamId, parsed.data.servers);
   if (parsed.data.type === "deleteServer") await deleteServer(teamId, parsed.data.serverId);
   if (parsed.data.type === "updateSettings") await updateTeamSettings(teamId, parsed.data.settings);
-  return NextResponse.json(await getSchedulePayload(teamId));
+  const payload = await getSchedulePayload(teamId);
+  await writePublicScheduleSnapshot(payload);
+  return NextResponse.json(payload);
 }

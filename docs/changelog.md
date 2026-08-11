@@ -2,6 +2,14 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-11 · Snapshot público de grilla
+
+### Técnico
+
+- La grilla pública pasó a leer un snapshot preparado en `teams/{teamId}/public/schedule` en vez de consultar todas las colecciones del equipo.
+- El snapshot se actualiza al asignar, cambiar configuración, plano o datos de equipo; las asignaciones individuales se actualizan sin releer toda la grilla.
+- El snapshot público excluye teléfonos, disponibilidad de servidores y el PNG del plano; este último se lee solo cuando se abre el modal. La vista Admin conserva la lectura completa.
+
 ## 2026-08-10 · Documentación sincronizada con repo actual
 
 ### Documentación

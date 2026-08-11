@@ -1,4 +1,5 @@
 # Historial de Relevos de IA
+- [CODEX] Implementé snapshot público de grilla por equipo para reducir las lecturas de Firestore: `/api/public-schedule` consulta un solo documento sin datos privados de servidores; Admin mantiene la lectura completa. El snapshot se sincroniza con asignaciones, configuración, plano y equipo.
 - [SISTEMA] Archivo de bitácora inicializado.
 - [CLAUDE] Rediseño visual «Programa de servicio» (Etapas 1-4): fuentes Fraunces+Hanken y paleta nueva (globals.css/layout); home con versículo e íconos por equipo; grilla como tablero con buscador "Tu servicio", franja "ahora" (fechas 13-15/08/2026) y alertas como puntos; campo Team.icon con selector visual en Panel Master (types/domain/validation/repositories/master-app/team-icon) y docs actualizados. Pendiente verificación con pnpm build/dev.
 - [CLAUDE][PENDIENTE->CODEX] Tareas de cierre del rediseño (no pude compilar en mi entorno):

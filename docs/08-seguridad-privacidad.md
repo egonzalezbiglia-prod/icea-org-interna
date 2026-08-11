@@ -1,7 +1,7 @@
 # Seguridad y privacidad
 
 Estado inicial documentado: 2026-07-25  
-Última actualización: 2026-08-10
+Última actualización: 2026-08-11
 
 ## Objetivo
 
@@ -36,7 +36,7 @@ No maneja actualmente:
 
 - APIs de escritura de equipo validan clave admin.
 - API master valida clave master.
-- La lectura de schedule requiere `teamId` y cliente permitido por header/cookie.
+- La lectura de grilla requiere cliente permitido por header/cookie.
 - El frontend oculta controles, pero no es fuente de seguridad.
 
 ## Controles por API
@@ -47,6 +47,7 @@ No maneja actualmente:
 - `GET /api/master`: requiere clave master.
 - `PATCH /api/master`: requiere clave master.
 - `GET /api/schedule`: exige `teamId` y header/cookie de cliente permitido.
+- `GET /api/public-schedule` y `GET /api/public-plan`: exigen cliente permitido y no exponen teléfonos ni disponibilidades de servidores.
 
 ## Validación de datos
 

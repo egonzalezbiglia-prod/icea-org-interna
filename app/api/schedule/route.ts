@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest, editKeyFromRequest, verifyEditKey } from "@/lib/auth";
 import { DEFAULT_TEAM_ID } from "@/lib/domain";
-import { getSchedulePayload, upsertAssignment } from "@/lib/repositories";
+import { getSchedulePayload, updatePublicAssignmentSnapshot, upsertAssignment } from "@/lib/repositories";
 import { assignmentSchema } from "@/lib/validation";
 
 const SCHEDULE_CLIENT_HEADER = "x-icea-schedule-client";
@@ -63,6 +63,8 @@ export async function PATCH(request: Request) {
   if (!verifyEditKey(editKeyFromRequest(request, body))) return NextResponse.json({ error: "Clave de admin requerida" }, { status: 403 });
   const parsed = assignmentSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Datos invalidos" }, { status: 400 });
-  const assignment = await upsertAssignment(teamIdFromRequest(request, body), { ...parsed.data, actor: actorFromRequest(request, body) });
+  const teamId = teamIdFromRequest(request, body);
+  const assignment = await upsertAssignment(teamId, { ...parsed.data, actor: actorFromRequest(request, body) });
+  await updatePublicAssignmentSnapshot(teamId, assignment);
   return NextResponse.json({ assignment });
 }

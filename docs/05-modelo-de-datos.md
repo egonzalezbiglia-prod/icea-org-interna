@@ -23,6 +23,7 @@ teams/{teamId}/positions/{positionId}
 teams/{teamId}/assignments/{assignmentId}
 teams/{teamId}/settings/plan
 teams/{teamId}/settings/rules
+teams/{teamId}/public/schedule
 ```
 
 Fallback histórico para `organizacion-interna`:
@@ -108,6 +109,17 @@ Una asignación con `serverId: null` representa una celda explícitamente vacía
 - `note`: nota visible.
 - `updatedAt`: timestamp.
 
+## Snapshot público de grilla
+
+`teams/{teamId}/public/schedule` guarda una versión preparada de la grilla para consultas públicas de bajo costo.
+
+- `version`: versión del formato del snapshot.
+- `updatedAt`: timestamp de la última actualización.
+- `payload`: equipo, días, horarios, puestos, asignaciones y metadatos del plano.
+- `payload.assignments`: mapa por id de asignación, para actualizar una celda sin releer la grilla completa.
+
+No incluye teléfonos ni disponibilidades de `Server`; la grilla pública solo recibe el nombre ya guardado en cada asignación. El PNG del plano se mantiene fuera del snapshot y se lee al abrir el modal.
+
 ## Defaults
 
 Días:
@@ -158,3 +170,4 @@ Reglas default:
 - 2026-07-25: campo `congressDates` en `Team`.
 - 2026-07-26: desasignación conserva documento vacío con `serverId: null`.
 - 2026-08-10: documentación sincronizada con repo actual.
+- 2026-08-11: snapshot público por equipo en `teams/{teamId}/public/schedule` para reducir lecturas de la grilla.

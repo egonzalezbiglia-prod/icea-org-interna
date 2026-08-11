@@ -5,7 +5,7 @@ export function middleware() {
   response.cookies.set("icea_schedule_client", "1", {
     httpOnly: false,
     maxAge: 60 * 60 * 12,
-    path: "/api/schedule",
+    path: "/api",
     sameSite: "lax",
     secure: true,
   });

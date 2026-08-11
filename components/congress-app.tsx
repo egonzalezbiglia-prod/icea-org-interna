@@ -227,6 +227,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const adminSessionKey = `${ADMIN_SESSION_KEY}:${teamId}`;
   const [message, setMessage] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
+  const [publicPlanLoaded, setPublicPlanLoaded] = useState(Boolean(initialData?.plan.imageUrl));
   const [savingId, setSavingId] = useState<string | null>(null);
   const [clearingSlotId, setClearingSlotId] = useState<string | null>(null);
 
@@ -327,9 +328,11 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const refresh = useCallback(async (showMessage = true) => {
     setMessage("");
     try {
-      const next = await apiJson<SchedulePayload>(`/api/schedule?teamId=${encodeURIComponent(teamId)}`);
+      const endpoint = isAdmin ? "/api/schedule" : "/api/public-schedule";
+      const next = await apiJson<SchedulePayload>(`${endpoint}?teamId=${encodeURIComponent(teamId)}`);
       setData(next);
       setHasLoadedData(true);
+      setPublicPlanLoaded(isAdmin || Boolean(next.plan.imageUrl));
       writeCachedSchedule(next);
       if (showMessage && isAdmin) setMessage("Grilla actualizada.");
     } catch (error) {
@@ -433,9 +436,26 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
         writeCachedSchedule(nextData);
         return nextData;
       });
+      setPublicPlanLoaded(true);
       setMessage("Plano actualizado.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo actualizar el plano.");
+    }
+  }
+
+  async function openPlan() {
+    setPlanOpen(true);
+    if (isAdmin || publicPlanLoaded) return;
+    try {
+      const result = await apiJson<{ plan: SchedulePayload["plan"] }>(`/api/public-plan?teamId=${encodeURIComponent(teamId)}`);
+      setData((current) => {
+        const nextData = { ...current, plan: result.plan };
+        writeCachedSchedule(nextData);
+        return nextData;
+      });
+      setPublicPlanLoaded(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo cargar el plano.");
     }
   }
 
@@ -577,7 +597,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
           <h1>Grilla de turnos</h1>
         </div>
         <div className="topbar-actions">
-          <button className="ghost-button" onClick={() => setPlanOpen(true)}><MapIcon size={17} />Plano</button>
+          <button className="ghost-button" onClick={() => void openPlan()}><MapIcon size={17} />Plano</button>
           <button className="ghost-button" onClick={() => void refresh()}><RefreshCw size={17} />Actualizar</button>
           <div className="menu-wrap">
             <button className="ghost-button menu-trigger" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>

@@ -26,7 +26,9 @@ Estado inicial documentado: 2026-07-25
 
 | Método | Endpoint | Uso | Validación |
 |---|---|---|---|
-| `GET` | `/api/schedule?teamId={teamId}` | Lee grilla completa de un equipo | Requiere `teamId` y cliente permitido |
+| `GET` | `/api/public-schedule?teamId={teamId}` | Lee el snapshot liviano de la grilla pública | Requiere cliente permitido |
+| `GET` | `/api/public-plan?teamId={teamId}` | Lee el plano público cuando se abre el modal | Requiere cliente permitido |
+| `GET` | `/api/schedule?teamId={teamId}` | Lee la grilla completa para administración | Requiere `teamId` y cliente permitido |
 | `PATCH` | `/api/schedule` | Asigna o desasigna una celda | Clave admin |
 | `PATCH` | `/api/config` | Cambia servidores, horarios, posiciones, reglas e importación | Clave admin |
 | `PATCH` | `/api/plan` | Guarda plano y nota | Clave admin |
@@ -34,14 +36,16 @@ Estado inicial documentado: 2026-07-25
 | `PATCH` | `/api/master` | Crea o edita equipos | Clave master |
 | `POST/DELETE` | `/api/auth/gate` | Endpoint neutro de compatibilidad | Sin estado real |
 
-## Lectura de schedule
+## Lectura de grilla
 
-`GET /api/schedule` no es una API pública abierta. Acepta lectura si:
+Las APIs de lectura de grilla no son públicas abiertas. Aceptan lectura si:
 
 - Recibe header `x-icea-schedule-client: schedule-ui`, o
 - Recibe cookie `icea_schedule_client=1`.
 
-El middleware setea esa cookie para rutas `/equipos/:path*`, con path `/api/schedule`, `sameSite: lax`, `secure: true` y vida de 12 horas.
+El middleware setea esa cookie para rutas `/equipos/:path*`, con path `/api`, `sameSite: lax`, `secure: true` y vida de 12 horas.
+
+La grilla común consulta `GET /api/public-schedule`. Lee `teams/{teamId}/public/schedule`, un snapshot actualizado por cambios de Admin y sin teléfonos, disponibilidad ni datos privados de servidores. La primera consulta de un equipo sin snapshot lo genera desde la grilla completa; las siguientes leen un documento. El PNG del plano se lee por separado solo al abrirlo, para no acercar el snapshot al límite de tamaño de Firestore. La grilla de Admin sigue leyendo `/api/schedule` con el detalle completo.
 
 ## Estructura
 
@@ -97,3 +101,4 @@ docs/
 - Al desasignar se guarda documento con `serverId: null` para bloquear fallback histórico.
 - Si Firebase no está configurado, las lecturas devuelven defaults locales y las escrituras fallan.
 - Las páginas principales son dinámicas (`force-dynamic`) para leer datos frescos.
+- El navegador conserva una copia local de la última grilla pública; el botón Actualizar consulta el snapshot compartido.

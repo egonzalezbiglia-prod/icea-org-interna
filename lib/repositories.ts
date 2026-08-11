@@ -3,6 +3,8 @@ import { COUNTRIES, DAYS, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, DEFA
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
 import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
 
+const PUBLIC_SNAPSHOT_VERSION = 1;
+
 function timestampToString(value: unknown) {
   if (value instanceof Timestamp) return value.toDate().toISOString();
   if (value instanceof Date) return value.toISOString();
@@ -111,6 +113,42 @@ function teamDoc(teamId: string) {
 
 function teamCollection(teamId: string, name: string): CollectionReference<DocumentData> {
   return teamDoc(teamId).collection(name);
+}
+
+function publicScheduleSnapshotDoc(teamId: string) {
+  return teamCollection(teamId, "public").doc("schedule");
+}
+
+type PublicScheduleSnapshot = Omit<SchedulePayload, "assignments"> & {
+  assignments: Record<string, Assignment>;
+};
+
+function publicScheduleFromPayload(payload: SchedulePayload): PublicScheduleSnapshot {
+  return {
+    ...payload,
+    // La grilla pública necesita los nombres asignados, pero no datos privados de servidores.
+    settings: DEFAULT_TEAM_SETTINGS,
+    servers: [],
+    // El PNG se consulta solo al abrir el plano para no exceder el límite del documento.
+    plan: { ...payload.plan, imageUrl: null },
+    assignments: Object.fromEntries(payload.assignments.map((assignment) => [assignment.id, assignment])),
+  };
+}
+
+function payloadFromPublicSnapshot(value: unknown): SchedulePayload | null {
+  if (!value || typeof value !== "object") return null;
+  const snapshot = value as Partial<PublicScheduleSnapshot>;
+  if (!snapshot.team || !Array.isArray(snapshot.days) || !Array.isArray(snapshot.slots) || !Array.isArray(snapshot.positions) || !snapshot.assignments || typeof snapshot.assignments !== "object" || Array.isArray(snapshot.assignments)) return null;
+  return {
+    team: snapshot.team,
+    settings: snapshot.settings ?? DEFAULT_TEAM_SETTINGS,
+    days: snapshot.days,
+    slots: snapshot.slots,
+    positions: snapshot.positions,
+    servers: [],
+    assignments: Object.values(snapshot.assignments),
+    plan: snapshot.plan ?? { imageUrl: null, note: null, updatedAt: null },
+  };
 }
 
 async function commitInChunks(operations: Array<(batch: WriteBatch) => void>) {
@@ -280,6 +318,51 @@ export async function getSchedulePayload(teamId = DEFAULT_TEAM_ID): Promise<Sche
     listSlots(teamId),
   ]);
   return { team, settings, days: DAYS, slots, positions, servers, assignments, plan };
+}
+
+export async function writePublicScheduleSnapshot(payload: SchedulePayload) {
+  if (!hasFirebaseConfig()) return publicScheduleFromPayload(payload);
+  const snapshot = publicScheduleFromPayload(payload);
+  await publicScheduleSnapshotDoc(payload.team.id).set({
+    version: PUBLIC_SNAPSHOT_VERSION,
+    updatedAt: Timestamp.now(),
+    payload: snapshot,
+  });
+  return snapshot;
+}
+
+export async function refreshPublicScheduleSnapshot(teamId = DEFAULT_TEAM_ID) {
+  const payload = await getSchedulePayload(teamId);
+  return writePublicScheduleSnapshot(payload);
+}
+
+export async function getPublicScheduleSnapshot(teamId = DEFAULT_TEAM_ID): Promise<SchedulePayload> {
+  if (!hasFirebaseConfig()) return payloadFromPublicSnapshot(publicScheduleFromPayload(await getSchedulePayload(teamId)))!;
+  const doc = await publicScheduleSnapshotDoc(teamId).get();
+  const data = doc.data();
+  const payload = data?.version === PUBLIC_SNAPSHOT_VERSION ? payloadFromPublicSnapshot(data.payload) : null;
+  if (payload) return payload;
+
+  const refreshed = await refreshPublicScheduleSnapshot(teamId);
+  return payloadFromPublicSnapshot(refreshed)!;
+}
+
+export async function updatePublicAssignmentSnapshot(teamId: string, assignment: Assignment) {
+  if (!hasFirebaseConfig()) return;
+  await publicScheduleSnapshotDoc(teamId).set({
+    version: PUBLIC_SNAPSHOT_VERSION,
+    updatedAt: Timestamp.now(),
+    payload: { assignments: { [assignment.id]: assignment } },
+  }, { merge: true });
+}
+
+export async function updatePublicPlanSnapshot(teamId: string, plan: Plan) {
+  if (!hasFirebaseConfig()) return;
+  await publicScheduleSnapshotDoc(teamId).set({
+    version: PUBLIC_SNAPSHOT_VERSION,
+    updatedAt: Timestamp.now(),
+    payload: { plan: { ...plan, imageUrl: null } },
+  }, { merge: true });
 }
 
 export async function upsertAssignment(teamId: string, input: { id: string; dayId: string; slotId: string; positionId: number; serverId: string | null; actor: string }) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { editKeyFromRequest, verifyEditKey } from "@/lib/auth";
 import { DEFAULT_TEAM_ID } from "@/lib/domain";
-import { updatePlan } from "@/lib/repositories";
+import { updatePlan, updatePublicPlanSnapshot } from "@/lib/repositories";
 import { planSchema } from "@/lib/validation";
 
 function teamIdFromRequest(request: Request, body?: Record<string, unknown>) {
@@ -15,5 +15,8 @@ export async function PATCH(request: Request) {
   if (!verifyEditKey(editKeyFromRequest(request, body))) return NextResponse.json({ error: "Clave de admin requerida" }, { status: 403 });
   const parsed = planSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Datos invalidos" }, { status: 400 });
-  return NextResponse.json({ plan: await updatePlan(teamIdFromRequest(request, body), parsed.data) });
+  const teamId = teamIdFromRequest(request, body);
+  const plan = await updatePlan(teamId, parsed.data);
+  await updatePublicPlanSnapshot(teamId, plan);
+  return NextResponse.json({ plan });
 }

@@ -463,9 +463,15 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         daySlots.forEach((slot, index) => {
           const x = tableX + posWidth + index * slotWidth;
           const assignment = assignments.get(assignmentId(activeDay, slot.id, position.id));
-          ctx.fillStyle = assignment?.serverName ? "#10241d" : "rgba(16, 36, 29, 0.42)";
-          ctx.font = assignment?.serverName ? "800 17px Arial, sans-serif" : "700 17px Arial, sans-serif";
-          ctx.fillText(ajustarTexto(ctx, assignment?.serverName || "Sin asignar", slotWidth - 30), x + 18, y + 31);
+          const assignedName = assignment?.serverName;
+          if (!assignedName) {
+            redondearRect(ctx, x + 10, y + 8, slotWidth - 20, altoFila - 24, 10);
+            ctx.fillStyle = "rgba(255, 179, 191, 0.34)";
+            ctx.fill();
+          }
+          ctx.fillStyle = assignedName ? "#10241d" : "#9c3142";
+          ctx.font = assignedName ? "800 17px Arial, sans-serif" : "800 17px Arial, sans-serif";
+          ctx.fillText(ajustarTexto(ctx, assignedName || "Sin asignar", slotWidth - 30), x + 18, y + 31);
         });
       });
 

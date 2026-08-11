@@ -2340,6 +2340,29 @@ h3 {
   white-space: nowrap;
 }
 
+.slot-admin-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  margin-top: 0.42rem;
+  padding-right: 2rem;
+  color: var(--accent-ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.slot-admin-count strong {
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.slot-admin-count small {
+  color: var(--ink-dim);
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .clear-slot-button {
   position: absolute;
   right: 0.55rem;

@@ -232,6 +232,12 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
 
   const isAdmin = adminKey === ADMIN_KEY;
   const assignments = useMemo(() => assignmentMap(data.assignments), [data.assignments]);
+  const assignedCountBySlot = useMemo(() => data.assignments.reduce((counts, assignment) => {
+    if (assignment.dayId === activeDay && (assignment.serverId || assignment.serverName)) {
+      counts.set(assignment.slotId, (counts.get(assignment.slotId) ?? 0) + 1);
+    }
+    return counts;
+  }, new Map<string, number>()), [activeDay, data.assignments]);
   const servers = useMemo(() => serverMap(data.servers), [data.servers]);
   const slotsById = useMemo(() => slotMap(data.slots), [data.slots]);
   const slots = useMemo(() => data.slots.filter((slot) => slot.dayId === activeDay), [activeDay, data.slots]);
@@ -691,6 +697,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                       </span>
                       <span className="slot-turn">Turno {index + 1}</span>
                     </span>
+                    {isAdmin ? <span className="slot-admin-count"><strong>{assignedCountBySlot.get(slot.id) ?? 0}</strong><small>asignados · ideal {slot.idealCoverage ?? 40} · mín. {slot.minimumCoverage ?? 30}</small></span> : null}
                     {isAdmin ? <button className="clear-slot-button" type="button" disabled={clearingSlotId === slot.id} onClick={() => void clearSlot(slot)} title="Vaciar turno" aria-label={`Vaciar turno ${index + 1}`}><Trash2 size={13} /></button> : null}
                   </th>
                 ))}

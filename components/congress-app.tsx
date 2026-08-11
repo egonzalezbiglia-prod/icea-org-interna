@@ -679,9 +679,9 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
           ))}
         </nav>
 
-        <div className="schedule-actions">
+        {isAdmin ? <div className="schedule-actions">
           <button className="ghost-button" type="button" onClick={() => void copyDayScheduleImage()}><Copy size={17} />Copiar imagen</button>
-        </div>
+        </div> : null}
 
         <section className="schedule-wrap" style={estiloGrilla} aria-label="Grilla de turnos">
           <table className="schedule-grid">

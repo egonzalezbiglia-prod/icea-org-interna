@@ -724,7 +724,12 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                       const options = optionsForCell(data, slot, id);
                       const esAhora = slot.id === slotAhoraId;
                       const coincide = Boolean(search && assignment?.serverName && normalizeSearch(assignment.serverName).includes(search));
-                      const cellClass = [esAhora ? "nowcol" : "", inactive ? "cell-danger" : "", partial ? "cell-warning" : "", consecutive ? "cell-consecutive" : ""].filter(Boolean).join(" ");
+                      const cellClass = [
+                        esAhora ? "nowcol" : "",
+                        isAdmin && inactive ? "cell-danger" : "",
+                        isAdmin && partial ? "cell-warning" : "",
+                        isAdmin && consecutive ? "cell-consecutive" : "",
+                      ].filter(Boolean).join(" ");
                       return (
                         <td className={cellClass} key={slot.id}>
                           <div className="cell-assignment">
@@ -737,7 +742,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                             ) : (
                               <span className={`cell-name${assignment?.serverName ? "" : " muted"}${coincide ? " me" : ""}`}>{assignment?.serverName || "—"}</span>
                             )}
-                            {assignment?.serverId && (inactive || partial || consecutive) ? (
+                            {isAdmin && assignment?.serverId && (inactive || partial || consecutive) ? (
                               <small className="cell-alert">
                                 <span className={inactive ? "sdot d-danger" : "sdot d-warn"} aria-hidden="true" />
                                 {inactive ? "Inactivo" : partial ? `Parcial ${partialLabel(fit)}` : "2 seguidos"}

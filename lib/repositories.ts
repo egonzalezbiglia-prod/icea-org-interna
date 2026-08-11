@@ -1,5 +1,5 @@
-import type { CollectionReference, DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from "firebase-admin/firestore";
-import { COUNTRIES, DAYS, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, cleanPhone, normalizeSearch, slugifyTeamId } from "@/lib/domain";
+import type { CollectionReference, DocumentData, DocumentSnapshot, QueryDocumentSnapshot, WriteBatch } from "firebase-admin/firestore";
+import { COUNTRIES, DAYS, DEFAULT_IDEAL_COVERAGE, DEFAULT_MINIMUM_COVERAGE, DEFAULT_TEAM_ID, DEFAULT_TEAM_SETTINGS, DEFAULT_TEAMS, FECHAS_CONGRESO, POSITIONS, SLOTS, assignmentId, cleanPhone, normalizeSearch, slugifyTeamId } from "@/lib/domain";
 import { getDb, hasFirebaseConfig, Timestamp } from "@/lib/firebase-admin";
 import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, Plan, Position, SchedulePayload, Server, Slot, Team, TeamSettings } from "@/lib/types";
 
@@ -113,6 +113,56 @@ function teamCollection(teamId: string, name: string): CollectionReference<Docum
   return teamDoc(teamId).collection(name);
 }
 
+async function commitInChunks(operations: Array<(batch: WriteBatch) => void>) {
+  for (let index = 0; index < operations.length; index += 450) {
+    const batch = getDb().batch();
+    operations.slice(index, index + 450).forEach((operation) => operation(batch));
+    await batch.commit();
+  }
+}
+
+async function compactPositions(collection: CollectionReference<DocumentData>, assignments: CollectionReference<DocumentData>) {
+  const snapshot = await collection.get();
+  const positions = snapshot.docs.map(positionFromDoc).sort((a, b) => a.id - b.id);
+  const remaps = positions
+    .map((position, index) => ({ position, nextId: index + 1 }))
+    .filter(({ position, nextId }) => position.id !== nextId);
+
+  if (!remaps.length) return;
+
+  const prepareOperations: Array<(batch: WriteBatch) => void> = [];
+  const finishOperations: Array<(batch: WriteBatch) => void> = [];
+  for (const { position, nextId } of remaps) {
+    const name = position.name.trim().toLowerCase() === `posicion ${position.id}` ? `Posicion ${nextId}` : position.name;
+    const temporaryPositionRef = collection.doc(`__compact__${position.id}`);
+    prepareOperations.push((batch) => {
+      batch.set(temporaryPositionRef, { ...position, id: nextId, name }, { merge: true });
+      batch.delete(collection.doc(String(position.id)));
+    });
+    finishOperations.push((batch) => {
+      batch.set(collection.doc(String(nextId)), { ...position, id: nextId, name }, { merge: true });
+      batch.delete(temporaryPositionRef);
+    });
+
+    const assigned = await assignments.where("positionId", "==", position.id).get();
+    assigned.docs.forEach((doc) => {
+      const data = doc.data();
+      const nextDocId = assignmentId(data.dayId as DayId, data.slotId, nextId);
+      const temporaryAssignmentRef = assignments.doc(`__compact__${doc.id}`);
+      prepareOperations.push((batch) => {
+        batch.set(temporaryAssignmentRef, { ...data, positionId: nextId }, { merge: true });
+        batch.delete(doc.ref);
+      });
+      finishOperations.push((batch) => {
+        batch.set(assignments.doc(nextDocId), { ...data, positionId: nextId }, { merge: true });
+        batch.delete(temporaryAssignmentRef);
+      });
+    });
+  }
+
+  await commitInChunks(prepareOperations);
+  await commitInChunks(finishOperations);
+}
 
 function mergeById<T extends { id: string | number }>(primary: T[], fallback: T[]) {
   const map = new Map<string, T>();
@@ -305,6 +355,8 @@ export async function deletePosition(teamId: string, positionId: number) {
   batch.delete(teamCollection(teamId, "positions").doc(String(positionId)));
   if (teamId === DEFAULT_TEAM_ID) batch.delete(getDb().collection("positions").doc(String(positionId)));
   await batch.commit();
+  await compactPositions(teamCollection(teamId, "positions"), teamCollection(teamId, "assignments"));
+  if (teamId === DEFAULT_TEAM_ID) await compactPositions(getDb().collection("positions"), getDb().collection("assignments"));
 }
 
 export async function upsertServer(teamId: string, input: { id?: string; fullName: string; whatsapp: string; countryCode: CountryCode; active: boolean; availability: AvailabilityRange[] }) {

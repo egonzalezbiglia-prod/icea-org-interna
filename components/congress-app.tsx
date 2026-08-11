@@ -396,11 +396,18 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       const day = data.days.find((item) => item.id === activeDay);
       const daySlots = slots;
       const dayPositions = positions;
+      const hasAssignments = data.assignments.some((assignment) => assignment.dayId === activeDay && Boolean(assignment.serverId || assignment.serverName));
+      if (!hasAssignments) {
+        setMessage(`${day?.label ?? "El día"} no tiene servidores asignados.`);
+        return;
+      }
       const ancho = Math.max(1180, 300 + daySlots.length * 210);
       const margen = 48;
       const altoHeader = 176;
       const altoFila = 56;
-      const alto = Math.max(620, altoHeader + 78 + dayPositions.length * altoFila + 72);
+      const headerY = altoHeader + 18;
+      const tableBottom = headerY + 66 + dayPositions.length * altoFila;
+      const alto = Math.max(620, tableBottom + 128);
       const posWidth = 220;
       const tableWidth = ancho - margen * 2;
       const slotWidth = daySlots.length ? (tableWidth - posWidth) / daySlots.length : tableWidth - posWidth;
@@ -429,8 +436,6 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       ctx.fillText(`${fechaCortaDia(activeDay, data.team.congressDates)} · posiciones, turnos y servidores asignados`, margen, 154);
 
       const tableX = margen;
-      const tableY = altoHeader + 18;
-      const headerY = tableY;
       redondearRect(ctx, tableX, headerY, tableWidth, 54, 18);
       ctx.fillStyle = "#d8ff6a";
       ctx.fill();

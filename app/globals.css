@@ -526,6 +526,12 @@ h3 {
   box-shadow: 0 12px 24px color-mix(in srgb, var(--warm) 22%, transparent);
 }
 
+.schedule-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.2rem 0 0.85rem;
+}
+
 .schedule-wrap {
   max-height: calc(100vh - 305px);
   overflow: auto;
@@ -768,6 +774,14 @@ h3 {
   .topbar-actions > button,
   .topbar-actions > a {
     flex: 1 1 126px;
+  }
+
+  .schedule-actions {
+    justify-content: stretch;
+  }
+
+  .schedule-actions .ghost-button {
+    width: 100%;
   }
 
   .app-toast {

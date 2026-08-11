@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
+import { Copy, Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { assignmentId, fechaCortaDia, hoursBetween, minutesFromTime, normalizeSearch, slotEnCurso } from "@/lib/domain";
 import type { Assignment, DayId, SchedulePayload, Server, Slot } from "@/lib/types";
@@ -129,6 +129,27 @@ function fileToImage(file: File) {
     };
     image.src = url;
   });
+}
+
+function redondearRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+}
+
+function ajustarTexto(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let next = text;
+  while (next.length > 1 && ctx.measureText(`${next}...`).width > maxWidth) {
+    next = next.slice(0, -1);
+  }
+  return `${next.trim()}...`;
+}
+
+async function copiarBlobPng(blob: Blob) {
+  if (!navigator.clipboard?.write || !("ClipboardItem" in window)) {
+    throw new Error("Este navegador no permite copiar imágenes al portapapeles.");
+  }
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 }
 
 async function pngFileToDataUrl(file: File) {
@@ -369,6 +390,103 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     }
   }
 
+  async function copyDayScheduleImage() {
+    setMessage("");
+    try {
+      const day = data.days.find((item) => item.id === activeDay);
+      const daySlots = slots;
+      const dayPositions = positions;
+      const ancho = Math.max(1180, 300 + daySlots.length * 210);
+      const margen = 48;
+      const altoHeader = 176;
+      const altoFila = 56;
+      const alto = Math.max(620, altoHeader + 78 + dayPositions.length * altoFila + 72);
+      const posWidth = 220;
+      const tableWidth = ancho - margen * 2;
+      const slotWidth = daySlots.length ? (tableWidth - posWidth) / daySlots.length : tableWidth - posWidth;
+      const canvas = document.createElement("canvas");
+      canvas.width = ancho;
+      canvas.height = alto;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("No se pudo preparar la imagen.");
+
+      ctx.fillStyle = "#f8fbf2";
+      ctx.fillRect(0, 0, ancho, alto);
+      const fondo = ctx.createLinearGradient(0, 0, ancho, alto);
+      fondo.addColorStop(0, "#123328");
+      fondo.addColorStop(1, "#245640");
+      ctx.fillStyle = fondo;
+      redondearRect(ctx, 26, 26, ancho - 52, alto - 52, 28);
+      ctx.fill();
+
+      ctx.fillStyle = "#f6f3e8";
+      ctx.font = "800 42px Georgia, serif";
+      ctx.fillText(`Grilla ${day?.label ?? ""}`, margen, 86);
+      ctx.fillStyle = "rgba(246, 243, 232, 0.78)";
+      ctx.font = "700 17px Arial, sans-serif";
+      ctx.fillText(data.team.name.toUpperCase(), margen, 121);
+      ctx.font = "500 18px Arial, sans-serif";
+      ctx.fillText(`${fechaCortaDia(activeDay, data.team.congressDates)} · posiciones, turnos y servidores asignados`, margen, 154);
+
+      const tableX = margen;
+      const tableY = altoHeader + 18;
+      const headerY = tableY;
+      redondearRect(ctx, tableX, headerY, tableWidth, 54, 18);
+      ctx.fillStyle = "#d8ff6a";
+      ctx.fill();
+      ctx.fillStyle = "#10241d";
+      ctx.font = "900 17px Arial, sans-serif";
+      ctx.fillText("POSICIÓN", tableX + 22, headerY + 34);
+      daySlots.forEach((slot, index) => {
+        const x = tableX + posWidth + index * slotWidth;
+        ctx.fillText(`TURNO ${index + 1}`, x + 18, headerY + 26);
+        ctx.font = "700 13px Arial, sans-serif";
+        ctx.fillText(`${slot.start} - ${slot.end}`, x + 18, headerY + 43);
+        ctx.font = "900 17px Arial, sans-serif";
+      });
+
+      dayPositions.forEach((position, rowIndex) => {
+        const y = headerY + 66 + rowIndex * altoFila;
+        redondearRect(ctx, tableX, y, tableWidth, altoFila - 8, 12);
+        ctx.fillStyle = rowIndex % 2 === 0 ? "rgba(255, 255, 255, 0.94)" : "rgba(232, 238, 235, 0.94)";
+        ctx.fill();
+
+        ctx.fillStyle = "#10241d";
+        ctx.font = "900 18px Arial, sans-serif";
+        ctx.fillText(ajustarTexto(ctx, nombrePuesto(position.id), posWidth - 38), tableX + 22, y + 31);
+
+        daySlots.forEach((slot, index) => {
+          const x = tableX + posWidth + index * slotWidth;
+          const assignment = assignments.get(assignmentId(activeDay, slot.id, position.id));
+          ctx.fillStyle = assignment?.serverName ? "#10241d" : "rgba(16, 36, 29, 0.42)";
+          ctx.font = assignment?.serverName ? "800 17px Arial, sans-serif" : "700 17px Arial, sans-serif";
+          ctx.fillText(ajustarTexto(ctx, assignment?.serverName || "Sin asignar", slotWidth - 30), x + 18, y + 31);
+        });
+      });
+
+      if (!dayPositions.length) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+        redondearRect(ctx, tableX, headerY + 70, tableWidth, 74, 14);
+        ctx.fill();
+        ctx.fillStyle = "#476158";
+        ctx.font = "800 20px Arial, sans-serif";
+        ctx.fillText("Sin posiciones cargadas", tableX + 22, headerY + 116);
+      }
+
+      ctx.fillStyle = "rgba(246, 243, 232, 0.72)";
+      ctx.font = "700 22px Arial, sans-serif";
+      ctx.fillText("ICEA 2026", margen, alto - 58);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((value) => value ? resolve(value) : reject(new Error("No se pudo generar el PNG.")), "image/png");
+      });
+      await copiarBlobPng(blob);
+      setMessage(`Imagen de ${day?.label ?? "día"} copiada.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo copiar la imagen.");
+    }
+  }
+
 
   return (
     <div className="app-shell">
@@ -470,6 +588,10 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
             </button>
           ))}
         </nav>
+
+        <div className="schedule-actions">
+          <button className="ghost-button" type="button" onClick={() => void copyDayScheduleImage()}><Copy size={17} />Copiar imagen</button>
+        </div>
 
         <section className="schedule-wrap" style={estiloGrilla} aria-label="Grilla de turnos">
           <table className="schedule-grid">

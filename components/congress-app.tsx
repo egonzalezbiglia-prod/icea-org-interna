@@ -395,18 +395,31 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
     try {
       const day = data.days.find((item) => item.id === activeDay);
       const daySlots = slots;
-      const dayPositions = positions;
       const hasAssignments = data.assignments.some((assignment) => assignment.dayId === activeDay && Boolean(assignment.serverId || assignment.serverName));
       if (!hasAssignments) {
         setMessage(`${day?.label ?? "El día"} no tiene servidores asignados.`);
         return;
       }
+      const groupLabels = ["Puestos", "Escalera", "Ascensores", "Accesos", "VIP"] as const;
+      const grupos = groupLabels
+        .map((label) => ({
+          label,
+          positions: positions.filter((position) => {
+            const nombre = normalizeSearch(nombrePuesto(position.id));
+            if (label === "Escalera") return nombre.includes("escalera");
+            if (label === "Ascensores") return nombre.includes("ascensor");
+            if (label === "Accesos") return nombre.includes("acceso");
+            if (label === "VIP") return nombre.includes("vip");
+            return !nombre.includes("escalera") && !nombre.includes("ascensor") && !nombre.includes("acceso") && !nombre.includes("vip");
+          }),
+        }))
+        .filter((group) => group.positions.length > 0);
       const ancho = Math.max(1180, 300 + daySlots.length * 210);
       const margen = 48;
       const altoHeader = 176;
-      const altoFila = 56;
+      const altoFila = 78;
       const headerY = altoHeader + 18;
-      const tableBottom = headerY + 66 + dayPositions.length * altoFila;
+      const tableBottom = headerY + 66 + grupos.length * altoFila;
       const alto = Math.max(620, tableBottom + 128);
       const posWidth = 220;
       const tableWidth = ancho - margen * 2;
@@ -433,7 +446,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       ctx.font = "700 17px Arial, sans-serif";
       ctx.fillText(data.team.name.toUpperCase(), margen, 121);
       ctx.font = "500 18px Arial, sans-serif";
-      ctx.fillText(`${fechaCortaDia(activeDay, data.team.congressDates)} · posiciones, turnos y servidores asignados`, margen, 154);
+      ctx.fillText(`${fechaCortaDia(activeDay, data.team.congressDates)} · grupos, turnos y cantidad asignada`, margen, 154);
 
       const tableX = margen;
       redondearRect(ctx, tableX, headerY, tableWidth, 54, 18);
@@ -441,7 +454,7 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
       ctx.fill();
       ctx.fillStyle = "#10241d";
       ctx.font = "900 17px Arial, sans-serif";
-      ctx.fillText("POSICIÓN", tableX + 22, headerY + 34);
+      ctx.fillText("GRUPO", tableX + 22, headerY + 34);
       daySlots.forEach((slot, index) => {
         const x = tableX + posWidth + index * slotWidth;
         ctx.fillText(`TURNO ${index + 1}`, x + 18, headerY + 26);
@@ -450,38 +463,46 @@ export function CongressApp({ initialData }: { initialData: SchedulePayload }) {
         ctx.font = "900 17px Arial, sans-serif";
       });
 
-      dayPositions.forEach((position, rowIndex) => {
+      grupos.forEach((group, rowIndex) => {
         const y = headerY + 66 + rowIndex * altoFila;
         redondearRect(ctx, tableX, y, tableWidth, altoFila - 8, 12);
         ctx.fillStyle = rowIndex % 2 === 0 ? "rgba(255, 255, 255, 0.94)" : "rgba(232, 238, 235, 0.94)";
         ctx.fill();
 
         ctx.fillStyle = "#10241d";
-        ctx.font = "900 18px Arial, sans-serif";
-        ctx.fillText(ajustarTexto(ctx, nombrePuesto(position.id), posWidth - 38), tableX + 22, y + 31);
+        ctx.font = "900 19px Arial, sans-serif";
+        ctx.fillText(ajustarTexto(ctx, group.label, posWidth - 38), tableX + 22, y + 29);
+        ctx.fillStyle = "rgba(16, 36, 29, 0.62)";
+        ctx.font = "700 13px Arial, sans-serif";
+        ctx.fillText(`${group.positions.length} posiciones`, tableX + 22, y + 51);
 
         daySlots.forEach((slot, index) => {
           const x = tableX + posWidth + index * slotWidth;
-          const assignment = assignments.get(assignmentId(activeDay, slot.id, position.id));
-          const assignedName = assignment?.serverName;
-          if (!assignedName) {
-            redondearRect(ctx, x + 10, y + 8, slotWidth - 20, altoFila - 24, 10);
+          const assignedCount = group.positions.filter((position) => {
+            const assignment = assignments.get(assignmentId(activeDay, slot.id, position.id));
+            return Boolean(assignment?.serverId || assignment?.serverName);
+          }).length;
+          const full = assignedCount >= group.positions.length;
+          if (!full) {
+            redondearRect(ctx, x + 10, y + 10, slotWidth - 20, altoFila - 28, 10);
             ctx.fillStyle = "rgba(255, 179, 191, 0.34)";
             ctx.fill();
           }
-          ctx.fillStyle = assignedName ? "#10241d" : "#9c3142";
-          ctx.font = assignedName ? "800 17px Arial, sans-serif" : "800 17px Arial, sans-serif";
-          ctx.fillText(ajustarTexto(ctx, assignedName || "Sin asignar", slotWidth - 30), x + 18, y + 31);
+          ctx.fillStyle = full ? "#10241d" : "#9c3142";
+          ctx.font = "900 25px Arial, sans-serif";
+          ctx.fillText(String(assignedCount), x + 18, y + 32);
+          ctx.font = "800 13px Arial, sans-serif";
+          ctx.fillText("asignados", x + 18, y + 53);
         });
       });
 
-      if (!dayPositions.length) {
+      if (!grupos.length) {
         ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
         redondearRect(ctx, tableX, headerY + 70, tableWidth, 74, 14);
         ctx.fill();
         ctx.fillStyle = "#476158";
         ctx.font = "800 20px Arial, sans-serif";
-        ctx.fillText("Sin posiciones cargadas", tableX + 22, headerY + 116);
+        ctx.fillText("Sin grupos de posiciones cargados", tableX + 22, headerY + 116);
       }
 
       ctx.fillStyle = "rgba(246, 243, 232, 0.72)";

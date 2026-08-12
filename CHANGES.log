@@ -1,4 +1,5 @@
 # Historial de Relevos de IA
+- [CODEX] Reemplacé la búsqueda por coincidencia directa por sugerencias de nombre completo: se selecciona una persona antes de mostrar sus turnos, evitando mezclas entre nombres parecidos.
 - [CODEX] Agregué validación server-side para impedir que una persona sea asignada a dos puestos dentro del mismo turno, aun con una grilla local desactualizada.
 - [CODEX] Implementé snapshot público de grilla por equipo para reducir las lecturas de Firestore: `/api/public-schedule` consulta un solo documento sin datos privados de servidores; Admin mantiene la lectura completa. El snapshot se sincroniza con asignaciones, configuración, plano y equipo.
 - [SISTEMA] Archivo de bitácora inicializado.

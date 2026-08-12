@@ -292,6 +292,73 @@ h3 {
   width: min(540px, 100%);
 }
 
+.search-combobox {
+  position: relative;
+  width: min(540px, 100%);
+}
+
+.search-combobox .search-field {
+  width: 100%;
+}
+
+.search-suggestions {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: 100%;
+  max-height: min(320px, 52vh);
+  display: grid;
+  gap: 0.25rem;
+  overflow-y: auto;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.search-suggestion {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  font-weight: 750;
+}
+
+.search-suggestion:hover,
+.search-suggestion:focus-visible {
+  background: var(--accent-soft);
+  outline: 0;
+}
+
+.search-suggestion-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--warm-ink);
+  background: var(--warm);
+  border-radius: 50%;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+}
+
+.search-suggestions p {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+
 .search-field input,
 .select-field select {
   width: 100%;

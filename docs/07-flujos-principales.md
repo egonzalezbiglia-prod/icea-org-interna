@@ -21,14 +21,14 @@ Resultado esperado:
 Rol: visitante o servidor.
 
 1. Entrar a `/equipos/{teamId}`.
-2. Buscar por nombre.
+2. Escribir parte del nombre y elegir la persona por su nombre completo.
 3. Ver la tarjeta del día activo si tiene turnos ese día.
 4. Revisar otros días si corresponde.
 5. Abrir el plano si necesita ubicar posiciones.
 
 Resultado esperado:
 
-- La persona encuentra sus turnos sin recorrer toda la grilla.
+- La persona encuentra sus turnos sin recorrer toda la grilla ni mezclar coincidencias de nombres parecidos.
 
 ## Asignar desde la grilla
 

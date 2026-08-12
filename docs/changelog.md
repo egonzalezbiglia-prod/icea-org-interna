@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-11 · Búsqueda por persona seleccionada
+
+### UX
+
+- El buscador de grilla ahora muestra sugerencias de nombre completo y requiere seleccionar una persona antes de mostrar sus turnos. Evita mezclar asignaciones de nombres con coincidencias parciales.
+
 ## 2026-08-11 · Bloqueo de duplicados por turno
 
 ### Reglas de negocio

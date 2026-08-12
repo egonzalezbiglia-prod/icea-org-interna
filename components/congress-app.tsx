@@ -25,6 +25,11 @@ type ServerOption = {
   shiftCount: number;
 };
 
+type SearchPerson = {
+  id: string;
+  name: string;
+};
+
 function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   return fetch(url, {
     ...init,
@@ -222,6 +227,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const [hasLoadedData, setHasLoadedData] = useState(Boolean(initialData));
   const [activeDay, setActiveDay] = useState<DayId>(initialData?.days[0]?.id ?? "jueves");
   const [query, setQuery] = useState("");
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [adminKey, setAdminKey] = useState("");
   const teamId = data.team.id;
   const adminSessionKey = `${ADMIN_SESSION_KEY}:${teamId}`;
@@ -245,10 +251,24 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const positions = data.positions;
   const search = normalizeSearch(query);
 
-  const personalShifts = useMemo(() => {
+  const matchingPeople = useMemo(() => {
     if (!search) return [];
+    const people = new Map<string, SearchPerson>();
+    data.assignments.forEach((assignment) => {
+      const name = assignment.serverName?.trim();
+      if (!name || !normalizeSearch(name).includes(search)) return;
+      const id = assignment.serverId ?? `nombre:${normalizeSearch(name)}`;
+      if (!people.has(id)) people.set(id, { id, name });
+    });
+    return Array.from(people.values()).sort((a, b) => a.name.localeCompare(b.name, "es"));
+  }, [data.assignments, search]);
+
+  const selectedPerson = matchingPeople.find((person) => person.id === selectedPersonId) ?? null;
+
+  const personalShifts = useMemo(() => {
+    if (!selectedPerson) return [];
     return data.assignments
-      .filter((assignment) => normalizeSearch(assignment.serverName).includes(search))
+      .filter((assignment) => (assignment.serverId ?? `nombre:${normalizeSearch(assignment.serverName)}`) === selectedPerson.id)
       .map((assignment) => ({
         assignment,
         day: data.days.find((day) => day.id === assignment.dayId),
@@ -260,7 +280,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
         if (a.assignment.slotId !== b.assignment.slotId) return a.assignment.slotId.localeCompare(b.assignment.slotId);
         return a.assignment.positionId - b.assignment.positionId;
       });
-  }, [data, search]);
+  }, [data, selectedPerson]);
 
   const personalShiftsByDay = useMemo(() => data.days
     .map((day) => ({
@@ -305,7 +325,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     return indice >= 0 ? indice + 1 : null;
   };
 
-  const nombrePersona = personalShifts[0]?.assignment.serverName ?? "";
+  const nombrePersona = selectedPerson?.name ?? "";
   const inicialPersona = nombrePersona.trim().charAt(0).toUpperCase();
   const labelDiaActivo = data.days.find((day) => day.id === activeDay)?.label ?? "";
   const grupoDiaActivo = personalShiftsByDay.find((group) => group.day.id === activeDay) ?? null;
@@ -634,12 +654,25 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
         {hasLoadedData ? (
           <>
         <section className="controls">
-          <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar servidor por nombre" />{query ? <button type="button" aria-label="Limpiar busqueda" onClick={() => setQuery("")}><X size={16} /></button> : null}</label>
+          <div className="search-combobox">
+            <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => { setQuery(event.target.value); setSelectedPersonId(null); }} type="search" placeholder="Buscar servidor por nombre" autoComplete="off" />{query ? <button type="button" aria-label="Limpiar búsqueda" onClick={() => { setQuery(""); setSelectedPersonId(null); }}><X size={16} /></button> : null}</label>
+            {search && !selectedPerson ? (
+              <div className="search-suggestions" aria-label="Servidores encontrados">
+                {matchingPeople.map((person) => (
+                  <button key={person.id} type="button" className="search-suggestion" onClick={() => { setSelectedPersonId(person.id); setQuery(person.name); }}>
+                    <span className="search-suggestion-avatar" aria-hidden="true">{person.name.charAt(0).toUpperCase()}</span>
+                    <span>{person.name}</span>
+                  </button>
+                ))}
+                {!matchingPeople.length ? <p>No hay servidores asignados con ese nombre.</p> : null}
+              </div>
+            ) : null}
+          </div>
         </section>
 
         {message ? <div className="app-toast" role="status" aria-live="polite"><span className="app-toast-icon">✓</span><strong>{message}</strong></div> : null}
 
-        {search ? (
+        {selectedPerson ? (
           <section className="person-results">
             {personalShifts.length ? (
               <>

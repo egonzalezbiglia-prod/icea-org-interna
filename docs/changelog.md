@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-11 · Bloqueo de duplicados por turno
+
+### Reglas de negocio
+
+- La API rechaza que la misma persona quede asignada en dos puestos del mismo turno, incluso si la grilla del navegador estaba desactualizada.
+
 ## 2026-08-11 · Snapshot público de grilla
 
 ### Técnico

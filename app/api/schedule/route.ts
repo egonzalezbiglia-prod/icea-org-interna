@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest, editKeyFromRequest, verifyEditKey } from "@/lib/auth";
 import { DEFAULT_TEAM_ID } from "@/lib/domain";
-import { getSchedulePayload, updatePublicAssignmentSnapshot, upsertAssignment } from "@/lib/repositories";
+import { AssignmentConflictError, getSchedulePayload, updatePublicAssignmentSnapshot, upsertAssignment } from "@/lib/repositories";
 import { assignmentSchema } from "@/lib/validation";
 
 const SCHEDULE_CLIENT_HEADER = "x-icea-schedule-client";
@@ -64,7 +64,12 @@ export async function PATCH(request: Request) {
   const parsed = assignmentSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Datos invalidos" }, { status: 400 });
   const teamId = teamIdFromRequest(request, body);
-  const assignment = await upsertAssignment(teamId, { ...parsed.data, actor: actorFromRequest(request, body) });
-  await updatePublicAssignmentSnapshot(teamId, assignment);
-  return NextResponse.json({ assignment });
+  try {
+    const assignment = await upsertAssignment(teamId, { ...parsed.data, actor: actorFromRequest(request, body) });
+    await updatePublicAssignmentSnapshot(teamId, assignment);
+    return NextResponse.json({ assignment });
+  } catch (error) {
+    if (error instanceof AssignmentConflictError) return NextResponse.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
 }

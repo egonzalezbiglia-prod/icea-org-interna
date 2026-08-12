@@ -58,6 +58,7 @@ Dos turnos son consecutivos si pertenecen al mismo día y el fin de uno coincide
 Configurable por equipo:
 
 - `preventSameSlotDuplicate`: evita que una persona cubra más de una posición en el mismo turno.
+- La API valida la misma regla para impedir duplicados aunque la grilla del navegador estuviera desactualizada.
 
 ## Servidores activos/inactivos
 

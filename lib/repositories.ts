@@ -5,6 +5,13 @@ import type { Assignment, AvailabilityRange, CongressDates, CountryCode, DayId, 
 
 const PUBLIC_SNAPSHOT_VERSION = 1;
 
+export class AssignmentConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AssignmentConflictError";
+  }
+}
+
 function timestampToString(value: unknown) {
   if (value instanceof Timestamp) return value.toDate().toISOString();
   if (value instanceof Date) return value.toISOString();
@@ -367,7 +374,8 @@ export async function updatePublicPlanSnapshot(teamId: string, plan: Plan) {
 
 export async function upsertAssignment(teamId: string, input: { id: string; dayId: string; slotId: string; positionId: number; serverId: string | null; actor: string }) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
-  const ref = teamCollection(teamId, "assignments").doc(input.id);
+  const assignments = teamCollection(teamId, "assignments");
+  const ref = assignments.doc(input.id);
   if (!input.serverId) {
     await ref.set({
       dayId: input.dayId,
@@ -380,9 +388,17 @@ export async function upsertAssignment(teamId: string, input: { id: string; dayI
     }, { merge: true });
     return assignmentFromDoc(await ref.get());
   }
-  const server = await teamCollection(teamId, "servers").doc(input.serverId).get();
-  const serverData = server.exists ? serverFromDoc(server) : null;
-  await ref.set({ dayId: input.dayId, slotId: input.slotId, positionId: input.positionId, serverId: input.serverId, serverName: serverData?.fullName ?? null, updatedAt: Timestamp.now(), updatedBy: input.actor }, { merge: true });
+  const serverRef = teamCollection(teamId, "servers").doc(input.serverId);
+  await getDb().runTransaction(async (transaction) => {
+    const [server, sameSlot] = await Promise.all([
+      transaction.get(serverRef),
+      transaction.get(assignments.where("slotId", "==", input.slotId)),
+    ]);
+    const duplicate = sameSlot.docs.find((assignment) => assignment.id !== input.id && assignment.data().serverId === input.serverId);
+    if (duplicate) throw new AssignmentConflictError("Esta persona ya está asignada en este turno.");
+    const serverData = server.exists ? serverFromDoc(server) : null;
+    transaction.set(ref, { dayId: input.dayId, slotId: input.slotId, positionId: input.positionId, serverId: input.serverId, serverName: serverData?.fullName ?? null, updatedAt: Timestamp.now(), updatedBy: input.actor }, { merge: true });
+  });
   return assignmentFromDoc(await ref.get());
 }
 

@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-11 · Actualización automática de grilla pública
+
+### Técnico
+
+- La grilla muestra el cache local de inmediato y consulta el snapshot público en segundo plano al entrar o volver a la pestaña. Se limita a una comprobación cada cinco minutos por navegador para evitar lecturas repetidas.
+
 ## 2026-08-11 · Búsqueda por persona seleccionada
 
 ### UX

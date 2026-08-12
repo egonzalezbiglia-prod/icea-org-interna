@@ -29,6 +29,7 @@ Rol: visitante o servidor.
 Resultado esperado:
 
 - La persona encuentra sus turnos sin recorrer toda la grilla ni mezclar coincidencias de nombres parecidos.
+- La última información compartida se actualiza al entrar o volver a la grilla, sin requerir el botón Actualizar.
 
 ## Asignar desde la grilla
 

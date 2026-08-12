@@ -2,7 +2,7 @@
 
 import type React from "react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Home, ImageIcon, Map as MapIcon, LogOut, MoreHorizontal, RefreshCw, Search, Settings, Trash2, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { assignmentId, fechaCortaDia, hoursBetween, minutesFromTime, normalizeSearch, slotEnCurso } from "@/lib/domain";
@@ -13,6 +13,7 @@ const ADMIN_KEY = "1icea2026";
 const ADMIN_SESSION_KEY = "icea-admin-ok";
 const MAX_PLAN_IMAGE_CHARS = 850_000;
 const PLAN_IMAGE_SIZES = [1800, 1500, 1200, 950, 760];
+const PUBLIC_SNAPSHOT_CHECK_MS = 5 * 60_000;
 
 type AvailabilityFit = "complete" | "partial-before" | "partial-after" | "partial-both" | "none";
 
@@ -236,6 +237,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const [publicPlanLoaded, setPublicPlanLoaded] = useState(Boolean(initialData?.plan.imageUrl));
   const [savingId, setSavingId] = useState<string | null>(null);
   const [clearingSlotId, setClearingSlotId] = useState<string | null>(null);
+  const lastPublicSnapshotCheck = useRef(0);
 
   const isAdmin = adminKey === ADMIN_KEY;
   const assignments = useMemo(() => assignmentMap(data.assignments), [data.assignments]);
@@ -349,6 +351,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     setMessage("");
     try {
       const endpoint = isAdmin ? "/api/schedule" : "/api/public-schedule";
+      if (!isAdmin) lastPublicSnapshotCheck.current = Date.now();
       const next = await apiJson<SchedulePayload>(`${endpoint}?teamId=${encodeURIComponent(teamId)}`);
       setData(next);
       setHasLoadedData(true);
@@ -367,10 +370,28 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
       setData(cached);
       setHasLoadedData(true);
       setActiveDay(cached.days[0]?.id ?? "jueves");
+      void refresh(false);
       return;
     }
     void refresh(false);
   }, [hasLoadedData, refresh, teamId]);
+
+  useEffect(() => {
+    if (!hasLoadedData || isAdmin) return undefined;
+    const checkSnapshotIfDue = () => {
+      if (Date.now() - lastPublicSnapshotCheck.current < PUBLIC_SNAPSHOT_CHECK_MS) return;
+      void refresh(false);
+    };
+    const checkSnapshotWhenVisible = () => {
+      if (document.visibilityState === "visible") checkSnapshotIfDue();
+    };
+    window.addEventListener("focus", checkSnapshotIfDue);
+    document.addEventListener("visibilitychange", checkSnapshotWhenVisible);
+    return () => {
+      window.removeEventListener("focus", checkSnapshotIfDue);
+      document.removeEventListener("visibilitychange", checkSnapshotWhenVisible);
+    };
+  }, [hasLoadedData, isAdmin, refresh]);
 
   function leaveAdmin() {
     setAdminKey("");

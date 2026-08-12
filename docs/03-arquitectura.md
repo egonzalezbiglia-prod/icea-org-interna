@@ -101,4 +101,4 @@ docs/
 - Al desasignar se guarda documento con `serverId: null` para bloquear fallback histórico.
 - Si Firebase no está configurado, las lecturas devuelven defaults locales y las escrituras fallan.
 - Las páginas principales son dinámicas (`force-dynamic`) para leer datos frescos.
-- El navegador conserva una copia local de la última grilla pública; el botón Actualizar consulta el snapshot compartido.
+- El navegador conserva una copia local de la última grilla pública y consulta el snapshot compartido en segundo plano al entrar o al volver a la pestaña, con una ventana mínima de cinco minutos entre comprobaciones.

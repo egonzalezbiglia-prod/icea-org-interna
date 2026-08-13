@@ -2,6 +2,13 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-13 · Asignaciones de grilla de bajo costo
+
+### Técnico
+
+- La validación de una persona por turno pasó de consultar todos los puestos del horario a usar una reserva única `slotId + serverId` dentro de una transacción.
+- Se agregó el comando `pnpm rebuild:reservations {teamId}` para migrar asignaciones existentes y se limpian las reservas al eliminar servidor, horario o posición.
+
 ## 2026-08-13 · Vacíos destacados en grilla Admin
 
 ### UX

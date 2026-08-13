@@ -126,6 +126,14 @@ function publicScheduleSnapshotDoc(teamId: string) {
   return teamCollection(teamId, "public").doc("schedule");
 }
 
+function assignmentReservationId(slotId: string, serverId: string) {
+  return `${slotId}__${serverId}`;
+}
+
+function assignmentReservationDoc(teamId: string, slotId: string, serverId: string) {
+  return teamCollection(teamId, "assignmentReservations").doc(assignmentReservationId(slotId, serverId));
+}
+
 type PublicScheduleSnapshot = Omit<SchedulePayload, "assignments"> & {
   assignments: Record<string, Assignment>;
 };
@@ -164,6 +172,38 @@ async function commitInChunks(operations: Array<(batch: WriteBatch) => void>) {
     operations.slice(index, index + 450).forEach((operation) => operation(batch));
     await batch.commit();
   }
+}
+
+export async function rebuildAssignmentReservations(teamId: string) {
+  if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
+  const assignments = teamCollection(teamId, "assignments");
+  const reservations = teamCollection(teamId, "assignmentReservations");
+  const [assignmentSnapshot, reservationSnapshot] = await Promise.all([assignments.get(), reservations.get()]);
+  const expected = new Map<string, { assignmentId: string; slotId: string; serverId: string }>();
+
+  for (const assignment of assignmentSnapshot.docs) {
+    const data = assignment.data();
+    if (!data.serverId) continue;
+    const reservationId = assignmentReservationId(data.slotId, data.serverId);
+    const existing = expected.get(reservationId);
+    if (existing && existing.assignmentId !== assignment.id) {
+      throw new AssignmentConflictError(`Hay asignaciones duplicadas en ${data.slotId}. Corregilas antes de reconstruir las reservas.`);
+    }
+    expected.set(reservationId, { assignmentId: assignment.id, slotId: data.slotId, serverId: data.serverId });
+  }
+
+  const operations: Array<(batch: WriteBatch) => void> = [];
+  expected.forEach((reservation, reservationId) => {
+    operations.push((batch) => {
+      batch.set(reservations.doc(reservationId), { ...reservation, updatedAt: Timestamp.now() }, { merge: true });
+    });
+  });
+  reservationSnapshot.docs
+    .filter((reservation) => !expected.has(reservation.id))
+    .forEach((reservation) => operations.push((batch) => batch.delete(reservation.ref)));
+
+  await commitInChunks(operations);
+  return expected.size;
 }
 
 async function compactPositions(collection: CollectionReference<DocumentData>, assignments: CollectionReference<DocumentData>) {
@@ -376,30 +416,34 @@ export async function upsertAssignment(teamId: string, input: { id: string; dayI
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
   const assignments = teamCollection(teamId, "assignments");
   const ref = assignments.doc(input.id);
-  if (!input.serverId) {
-    await ref.set({
-      dayId: input.dayId,
-      slotId: input.slotId,
-      positionId: input.positionId,
-      serverId: null,
-      serverName: null,
-      updatedAt: Timestamp.now(),
-      updatedBy: input.actor,
-    }, { merge: true });
-    return assignmentFromDoc(await ref.get());
-  }
-  const serverRef = teamCollection(teamId, "servers").doc(input.serverId);
+  const now = Timestamp.now();
+  let nextAssignment: Assignment | null = null;
+
   await getDb().runTransaction(async (transaction) => {
-    const [server, sameSlot] = await Promise.all([
-      transaction.get(serverRef),
-      transaction.get(assignments.where("slotId", "==", input.slotId)),
-    ]);
-    const duplicate = sameSlot.docs.find((assignment) => assignment.id !== input.id && assignment.data().serverId === input.serverId);
-    if (duplicate) throw new AssignmentConflictError("Esta persona ya está asignada en este turno.");
+    const previous = await transaction.get(ref);
+    const previousServerId = previous.data()?.serverId as string | null | undefined;
+
+    if (!input.serverId) {
+      transaction.set(ref, { dayId: input.dayId, slotId: input.slotId, positionId: input.positionId, serverId: null, serverName: null, updatedAt: now, updatedBy: input.actor }, { merge: true });
+      if (previousServerId) transaction.delete(assignmentReservationDoc(teamId, input.slotId, previousServerId));
+      nextAssignment = { id: input.id, dayId: input.dayId as DayId, slotId: input.slotId, positionId: input.positionId, serverId: null, serverName: null, updatedAt: timestampToString(now), updatedBy: input.actor };
+      return;
+    }
+
+    const serverRef = teamCollection(teamId, "servers").doc(input.serverId);
+    const reservationRef = assignmentReservationDoc(teamId, input.slotId, input.serverId);
+    const [server, reservation] = await Promise.all([transaction.get(serverRef), transaction.get(reservationRef)]);
+    const reservationOwner = reservation.data()?.assignmentId;
+    if (reservation.exists && reservationOwner !== input.id) throw new AssignmentConflictError("Esta persona ya está asignada en este turno.");
+
     const serverData = server.exists ? serverFromDoc(server) : null;
-    transaction.set(ref, { dayId: input.dayId, slotId: input.slotId, positionId: input.positionId, serverId: input.serverId, serverName: serverData?.fullName ?? null, updatedAt: Timestamp.now(), updatedBy: input.actor }, { merge: true });
+    transaction.set(ref, { dayId: input.dayId, slotId: input.slotId, positionId: input.positionId, serverId: input.serverId, serverName: serverData?.fullName ?? null, updatedAt: now, updatedBy: input.actor }, { merge: true });
+    transaction.set(reservationRef, { assignmentId: input.id, slotId: input.slotId, serverId: input.serverId, updatedAt: now });
+    if (previousServerId && previousServerId !== input.serverId) transaction.delete(assignmentReservationDoc(teamId, input.slotId, previousServerId));
+    nextAssignment = { id: input.id, dayId: input.dayId as DayId, slotId: input.slotId, positionId: input.positionId, serverId: input.serverId, serverName: serverData?.fullName ?? null, updatedAt: timestampToString(now), updatedBy: input.actor };
   });
-  return assignmentFromDoc(await ref.get());
+  if (!nextAssignment) throw new Error("No se pudo preparar la asignación.");
+  return nextAssignment;
 }
 
 export async function updatePlan(teamId: string, input: { imageUrl: string | null; note: string | null }) {
@@ -426,9 +470,13 @@ export async function upsertSlot(teamId: string, input: { id?: string; dayId: Da
 
 export async function deleteSlot(teamId: string, slotId: string) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
-  const assignments = await teamCollection(teamId, "assignments").where("slotId", "==", slotId).get();
+  const [assignments, reservations] = await Promise.all([
+    teamCollection(teamId, "assignments").where("slotId", "==", slotId).get(),
+    teamCollection(teamId, "assignmentReservations").where("slotId", "==", slotId).get(),
+  ]);
   const batch = getDb().batch();
   assignments.docs.forEach((doc) => batch.delete(doc.ref));
+  reservations.docs.forEach((doc) => batch.delete(doc.ref));
   batch.delete(teamCollection(teamId, "slots").doc(slotId));
   await batch.commit();
 }
@@ -456,6 +504,7 @@ export async function deletePosition(teamId: string, positionId: number) {
   await batch.commit();
   await compactPositions(teamCollection(teamId, "positions"), teamCollection(teamId, "assignments"));
   if (teamId === DEFAULT_TEAM_ID) await compactPositions(getDb().collection("positions"), getDb().collection("assignments"));
+  await rebuildAssignmentReservations(teamId);
 }
 
 export async function upsertServer(teamId: string, input: { id?: string; fullName: string; whatsapp: string; countryCode: CountryCode; active: boolean; availability: AvailabilityRange[] }) {
@@ -508,13 +557,15 @@ export async function importServers(teamId: string, inputs: Array<{ fullName: st
 
 export async function deleteServer(teamId: string, serverId: string) {
   if (!hasFirebaseConfig()) throw new Error("Firebase no esta configurado.");
-  const [assignments, rootAssignments] = await Promise.all([
+  const [assignments, rootAssignments, reservations] = await Promise.all([
     teamCollection(teamId, "assignments").where("serverId", "==", serverId).get(),
     teamId === DEFAULT_TEAM_ID ? getDb().collection("assignments").where("serverId", "==", serverId).get() : Promise.resolve(null),
+    teamCollection(teamId, "assignmentReservations").where("serverId", "==", serverId).get(),
   ]);
   const batch = getDb().batch();
   assignments.docs.forEach((doc) => batch.delete(doc.ref));
   rootAssignments?.docs.forEach((doc) => batch.delete(doc.ref));
+  reservations.docs.forEach((doc) => batch.delete(doc.ref));
   batch.delete(teamCollection(teamId, "servers").doc(serverId));
   if (teamId === DEFAULT_TEAM_ID) batch.delete(getDb().collection("servers").doc(serverId));
   await batch.commit();

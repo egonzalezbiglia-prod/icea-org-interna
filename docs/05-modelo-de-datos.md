@@ -21,6 +21,7 @@ teams/{teamId}/servers/{serverId}
 teams/{teamId}/slots/{slotId}
 teams/{teamId}/positions/{positionId}
 teams/{teamId}/assignments/{assignmentId}
+teams/{teamId}/assignmentReservations/{slotId}__{serverId}
 teams/{teamId}/settings/plan
 teams/{teamId}/settings/rules
 teams/{teamId}/public/schedule
@@ -103,6 +104,18 @@ settings/plan
 
 Una asignación con `serverId: null` representa una celda explícitamente vacía y evita que reaparezcan datos históricos por fallback.
 
+## `AssignmentReservation`
+
+Reserva única para impedir que la misma persona se asigne dos veces dentro de un turno.
+
+- `id`: `{slotId}__{serverId}`.
+- `assignmentId`: asignación que ocupa la reserva.
+- `slotId`: horario reservado.
+- `serverId`: persona reservada.
+- `updatedAt`: timestamp.
+
+La reserva se crea, mueve o elimina dentro de la misma transacción que la asignación. Una migración operativa puede reconstruirlas con `pnpm rebuild:reservations {teamId}`.
+
 ## `Plan`
 
 - `imageUrl`: URL o data URL PNG.
@@ -171,3 +184,4 @@ Reglas default:
 - 2026-07-26: desasignación conserva documento vacío con `serverId: null`.
 - 2026-08-10: documentación sincronizada con repo actual.
 - 2026-08-11: snapshot público por equipo en `teams/{teamId}/public/schedule` para reducir lecturas de la grilla.
+- 2026-08-13: reservas `assignmentReservations` para validar duplicados de turno sin leer todas las asignaciones del horario.

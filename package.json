@@ -11,7 +11,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "rebuild:reservations": "tsx scripts/rebuild-assignment-reservations.ts"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

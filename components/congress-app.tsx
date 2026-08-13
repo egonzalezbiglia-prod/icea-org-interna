@@ -236,6 +236,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const [planOpen, setPlanOpen] = useState(false);
   const [publicPlanLoaded, setPublicPlanLoaded] = useState(Boolean(initialData?.plan.imageUrl));
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingAssignmentSaves, setPendingAssignmentSaves] = useState(0);
   const [clearingSlotId, setClearingSlotId] = useState<string | null>(null);
   const lastPublicSnapshotCheck = useRef(0);
 
@@ -348,6 +349,16 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     return () => window.clearTimeout(timeout);
   }, [message]);
 
+  useEffect(() => {
+    if (!pendingAssignmentSaves) return undefined;
+    const preventClose = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", preventClose);
+    return () => window.removeEventListener("beforeunload", preventClose);
+  }, [pendingAssignmentSaves]);
+
   const refresh = useCallback(async (showMessage = true) => {
     setMessage("");
     try {
@@ -409,6 +420,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     const id = assignmentId(dayId, slotId, positionId);
     if (!isAdmin) return;
     setSavingId(id);
+    setPendingAssignmentSaves((pending) => pending + 1);
     setMessage("");
     try {
       const result = await apiJson<{ assignment: Assignment | null }>("/api/schedule", {
@@ -427,6 +439,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
       setMessage(error instanceof Error ? error.message : "No se pudo guardar.");
     } finally {
       setSavingId(null);
+      setPendingAssignmentSaves((pending) => Math.max(0, pending - 1));
     }
   }
 
@@ -441,6 +454,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     const label = `${labelDiaActivo} ${turn ? `Turno ${turn}` : slot.label}`;
     if (!window.confirm(`Vaciar ${label}? Se desasignan ${assignedPositions.length} servidor${assignedPositions.length === 1 ? "" : "es"}.`)) return;
     setClearingSlotId(slot.id);
+    setPendingAssignmentSaves((pending) => pending + 1);
     setMessage("");
     try {
       await Promise.all(assignedPositions.map((position) => apiJson<{ assignment: Assignment | null }>("/api/schedule", {
@@ -460,7 +474,15 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
       setMessage(error instanceof Error ? error.message : "No se pudo vaciar el turno.");
     } finally {
       setClearingSlotId(null);
+      setPendingAssignmentSaves((pending) => Math.max(0, pending - 1));
     }
+  }
+
+  function holdNavigationWhileSaving(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (!pendingAssignmentSaves) return;
+    event.preventDefault();
+    setMenuOpen(false);
+    setMessage("Guardando cambio... esperá un instante.");
   }
 
   async function savePlan(event: React.FormEvent<HTMLFormElement>) {
@@ -645,7 +667,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
         </div>
         <div className="topbar-actions">
           <button className="ghost-button" onClick={() => void openPlan()}><MapIcon size={17} />Plano</button>
-          <button className="ghost-button" onClick={() => void refresh()}><RefreshCw size={17} />Actualizar</button>
+          <button className="ghost-button" disabled={Boolean(pendingAssignmentSaves)} onClick={() => void refresh()}><RefreshCw size={17} />Actualizar</button>
           <div className="menu-wrap">
             <button className="ghost-button menu-trigger" aria-label="Más opciones" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
               <MoreHorizontal size={18} />
@@ -659,7 +681,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                     <span>Tema</span>
                     <ThemeToggle />
                   </div>
-                  <Link className="menu-item" href={`/equipos/${teamId}/admin`} role="menuitem" onClick={() => setMenuOpen(false)}><Settings size={16} />Admin</Link>
+                  <Link className="menu-item" href={`/equipos/${teamId}/admin`} role="menuitem" onClick={holdNavigationWhileSaving}><Settings size={16} />Admin</Link>
                   {isAdmin ? (
                     <button className="menu-item" role="menuitem" onClick={() => { setMenuOpen(false); leaveAdmin(); }}><LogOut size={16} />Salir admin</button>
                   ) : null}

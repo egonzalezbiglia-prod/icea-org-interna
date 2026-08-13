@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-13 · Protección de cambios pendientes en grilla
+
+### Corrección
+
+- La grilla evita abrir Admin, actualizar o cerrar/recargar sin aviso mientras una asignación está guardándose. Previene que una vista nueva lea el estado anterior antes de completarse el cambio.
+
 ## 2026-08-13 · Carga completa automática para Admin
 
 ### Corrección

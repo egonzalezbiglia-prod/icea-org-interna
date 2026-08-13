@@ -45,6 +45,7 @@ Rol: admin de equipo.
 Resultado esperado:
 
 - La asignación queda guardada en el equipo correcto.
+- Mientras se guarda una asignación, la app retiene la navegación hacia Admin y advierte antes de recargar o cerrar la pestaña.
 
 ## Vaciar un turno
 

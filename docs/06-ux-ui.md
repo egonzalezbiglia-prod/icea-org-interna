@@ -1,7 +1,7 @@
 # UX/UI
 
 Estado inicial documentado: 2026-07-25  
-Última actualización: 2026-08-10
+Última actualización: 2026-08-13
 
 ## Personalidad visual
 
@@ -61,6 +61,7 @@ Evitar:
 - Tabla horizontal con posiciones como filas y turnos como columnas.
 - Franja "ahora" resaltada si la fecha/hora del dispositivo cae dentro del congreso.
 - Alertas compactas dentro de la celda: inactivo, parcial, consecutivos.
+- En modo Admin, las celdas sin asignar se resaltan con rosa suave para detectar faltantes rápidamente.
 
 ## Admin
 

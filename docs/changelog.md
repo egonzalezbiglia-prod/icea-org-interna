@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-13 · Vacíos destacados en grilla Admin
+
+### UX
+
+- Las celdas sin asignar se muestran con fondo rosa suave en modo Admin para ubicar faltantes de cobertura más rápido.
+
 ## 2026-08-13 · Protección de cambios pendientes en grilla
 
 ### Corrección

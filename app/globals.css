@@ -28,6 +28,7 @@
   --grid-now: rgba(228, 248, 106, 0.22);
   --grid-warning: #f2ffc2;
   --grid-danger: #f8ded8;
+  --grid-unassigned: #fde7eb;
   --grid-consecutive: #eef8d0;
   --grid-muted: #7c8980;
 }
@@ -58,6 +59,7 @@
   --grid-now: rgba(223, 255, 124, 0.13);
   --grid-warning: rgba(223, 255, 124, 0.18);
   --grid-danger: rgba(213, 92, 68, 0.22);
+  --grid-unassigned: rgba(235, 115, 142, 0.2);
   --grid-consecutive: rgba(44, 191, 149, 0.15);
   --grid-muted: #8f9a90;
 }
@@ -1585,6 +1587,10 @@ h3 {
   background: var(--grid-danger);
 }
 
+.schedule-grid td.cell-unassigned {
+  background: var(--grid-unassigned);
+}
+
 .schedule-grid td.cell-consecutive {
   background: var(--grid-consecutive);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 36%, transparent);
@@ -2477,6 +2483,10 @@ h3 {
 
 .schedule-grid td.cell-danger {
   background: var(--grid-danger);
+}
+
+.schedule-grid td.cell-unassigned {
+  background: var(--grid-unassigned);
 }
 
 /* Nombre en celda + resaltado de la persona buscada */

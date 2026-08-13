@@ -823,6 +823,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                       const inactive = Boolean(assignment?.serverId && assignedServer && !assignedServer.active);
                       const partial = data.settings.warnPartialAvailability && isPartial(fit);
                       const consecutive = assignment?.serverId ? runLengthFor(assignment.serverId, slot, data.assignments, slotsById) >= data.settings.maxConsecutiveShifts : false;
+                      const unassigned = !assignment?.serverId;
                       const options = optionsForCell(data, slot, id);
                       const esAhora = slot.id === slotAhoraId;
                       const coincide = Boolean(search && assignment?.serverName && normalizeSearch(assignment.serverName).includes(search));
@@ -831,6 +832,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                         isAdmin && inactive ? "cell-danger" : "",
                         isAdmin && partial ? "cell-warning" : "",
                         isAdmin && consecutive ? "cell-consecutive" : "",
+                        isAdmin && adminDataReady && unassigned ? "cell-unassigned" : "",
                       ].filter(Boolean).join(" ");
                       return (
                         <td className={cellClass} key={slot.id}>

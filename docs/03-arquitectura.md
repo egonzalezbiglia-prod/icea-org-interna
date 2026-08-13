@@ -102,3 +102,4 @@ docs/
 - Si Firebase no está configurado, las lecturas devuelven defaults locales y las escrituras fallan.
 - Las páginas principales son dinámicas (`force-dynamic`) para leer datos frescos.
 - El navegador conserva una copia local de la última grilla pública y consulta el snapshot compartido en segundo plano al entrar o al volver a la pestaña, con una ventana mínima de cinco minutos entre comprobaciones.
+- Si hay una sesión Admin activa, la grilla carga automáticamente el detalle completo antes de habilitar los selectores de asignación. Esto evita que el snapshot público, que no trae la lista privada de servidores, parezca una grilla vacía.

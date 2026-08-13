@@ -2,6 +2,12 @@
 
 Este archivo registra cambios importantes. No reemplaza Git ni debe incluir cada detalle menor.
 
+## 2026-08-13 · Carga completa automática para Admin
+
+### Corrección
+
+- Al volver a la grilla con sesión Admin, se carga automáticamente el detalle de servidores antes de mostrar selectores. Evita que el snapshot público parezca una grilla sin asignaciones.
+
 ## 2026-08-11 · Actualización automática de grilla pública
 
 ### Técnico

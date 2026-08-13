@@ -240,6 +240,7 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
   const lastPublicSnapshotCheck = useRef(0);
 
   const isAdmin = adminKey === ADMIN_KEY;
+  const adminDataReady = !isAdmin || data.servers.length > 0;
   const assignments = useMemo(() => assignmentMap(data.assignments), [data.assignments]);
   const assignedCountBySlot = useMemo(() => data.assignments.reduce((counts, assignment) => {
     if (assignment.dayId === activeDay && (assignment.serverId || assignment.serverName)) {
@@ -375,6 +376,11 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
     }
     void refresh(false);
   }, [hasLoadedData, refresh, teamId]);
+
+  useEffect(() => {
+    if (!hasLoadedData || !isAdmin || adminDataReady) return;
+    void refresh(false);
+  }, [adminDataReady, hasLoadedData, isAdmin, refresh]);
 
   useEffect(() => {
     if (!hasLoadedData || isAdmin) return undefined;
@@ -807,12 +813,14 @@ export function CongressApp({ initialData = null, teamId: initialTeamId }: { ini
                       return (
                         <td className={cellClass} key={slot.id}>
                           <div className="cell-assignment">
-                            {isAdmin ? (
+                            {isAdmin && adminDataReady ? (
                               <select value={assignment?.serverId ?? ""} disabled={savingId === id} onChange={(event) => saveAssignment(activeDay, slot.id, position.id, event.target.value || null)}>
                                 <option value="">Sin asignar</option>
                                 {assignment?.serverId && assignedServer && !options.some((option) => option.server.id === assignedServer.id) ? <option value={assignedServer.id}>{assignedServer.fullName}</option> : null}
                                 {options.map((option) => <option key={option.server.id} value={option.server.id}>{isPartial(option.fit) ? `${partialLabel(option.fit)} ${option.server.fullName}` : option.server.fullName}</option>)}
                               </select>
+                            ) : isAdmin ? (
+                              <span className="cell-name muted">Cargando datos...</span>
                             ) : (
                               <span className={`cell-name${assignment?.serverName ? "" : " muted"}${coincide ? " me" : ""}`}>{assignment?.serverName || "—"}</span>
                             )}
